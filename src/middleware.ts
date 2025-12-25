@@ -1,0 +1,193 @@
+// src/middleware.ts
+/// <reference types="@cloudflare/workers-types" />
+
+import { defineMiddleware } from "astro:middleware";
+import { setPageCspHeader } from "@/lib/middleware-helper/csp-handler";
+import { setEdgeCacheContext } from "@/lib/edge-cache";
+import { BUILD_ID } from "@/config/build-id";
+
+const CACHE_VERSION_KEY_PREFIX = "v_";
+
+const CACHEABLE_PATHS = [
+  /^\/$/,
+  /^\/products\/[^/]+$/,
+  /^\/categories\/[^/]+$/,
+  /^\/search\/?$/,
+  /^\/sitemap\.xml$/,
+  /^\/sitemap-.*\.xml$/,
+  /^\/sitemap\.xsl$/,
+  /^\/(?!api|cart|buy|order-success|health|robots\.txt)[^/.]*$/,
+];
+
+/**
+ * Query params that should NOT affect HTML caching.
+ * These are typically marketing / tracking parameters.
+ */
+const CACHE_KEY_IGNORED_QUERY_PARAMS = [
+  "fbclid",
+  "gclid",
+  "msclkid",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "ref",
+];
+
+// Check if we're running in Cloudflare Workers environment
+const isCloudflareEnvironment = () => {
+  return typeof caches !== "undefined";
+};
+
+function buildCacheKeyUrl(url: URL): URL {
+  const cacheUrl = new URL(url.toString());
+
+  // Remove tracking params from the CACHE KEY (not from the real request URL).
+  for (const param of CACHE_KEY_IGNORED_QUERY_PARAMS) {
+    cacheUrl.searchParams.delete(param);
+  }
+
+  // Product variant selection is client-side. It should not explode cache entries.
+  if (/^\/products\/[^/]+$/.test(cacheUrl.pathname)) {
+    cacheUrl.searchParams.delete("size");
+    cacheUrl.searchParams.delete("color");
+  }
+
+  return cacheUrl;
+}
+
+const cachingMiddleware = defineMiddleware(async (context, next) => {
+  const { request, url, locals } = context;
+  const hostname = url.hostname;
+
+  const isCacheablePath = CACHEABLE_PATHS.some((regex) =>
+    regex.test(url.pathname),
+  );
+  const isGetRequest = request.method === "GET";
+
+  // Only enable caching if we're in Cloudflare environment and have KV binding
+  const isCloudflareEnv = isCloudflareEnvironment();
+  const kvBinding = locals.runtime?.env?.CACHE_CONTROL;
+
+  // Initialize edge cache context for ALL requests (not just cacheable paths)
+  // This enables L2 caching for API functions on every page
+  if (isCloudflareEnv && kvBinding) {
+    try {
+      const cache = (caches as any).default as Cache;
+      const projectCacheVersionKey = `${CACHE_VERSION_KEY_PREFIX}${hostname}`;
+      let cacheVersion = await kvBinding.get(projectCacheVersionKey);
+
+      if (!cacheVersion) {
+        cacheVersion = "1";
+        locals.runtime.ctx.waitUntil(
+          kvBinding.put(projectCacheVersionKey, cacheVersion),
+        );
+      }
+
+      // Set context for API functions (L2 caching)
+      setEdgeCacheContext(
+        cache,
+        cacheVersion,
+        hostname,
+        (promise: Promise<unknown>) => locals.runtime.ctx.waitUntil(promise),
+      );
+    } catch (error) {
+      console.warn("Failed to initialize edge cache context:", error);
+      // Continue without L2 caching - L1 still works
+    }
+  }
+
+  // HTML page caching (only for cacheable paths)
+  if (isGetRequest && isCacheablePath && kvBinding && isCloudflareEnv) {
+    try {
+      // Access cache using Cloudflare Workers API
+      const cache = (caches as any).default as Cache;
+
+      // Get cache version (already fetched above, but we need it for HTML cache key)
+      const projectCacheVersionKey = `${CACHE_VERSION_KEY_PREFIX}${hostname}`;
+      const cacheVersion = (await kvBinding.get(projectCacheVersionKey)) || "1";
+
+      const cacheUrl = buildCacheKeyUrl(new URL(request.url));
+      // IMPORTANT: include BUILD_ID so new deployments never serve stale HTML
+      // that references removed JS/CSS bundles from previous builds.
+      cacheUrl.searchParams.set("cache_v", `${cacheVersion}-${BUILD_ID}`);
+      const cacheKey = new Request(cacheUrl.toString(), request);
+
+      let cachedResponse = await cache.match(cacheKey);
+
+      if (cachedResponse) {
+        const response = new Response(cachedResponse.body, cachedResponse);
+        const cacheStatus = `HIT; v=${cacheVersion}; build=${BUILD_ID}; project=${hostname}`;
+        response.headers.set("X-Cache-Status", cacheStatus);
+        return setPageCspHeader(response);
+      }
+
+      const response = await next();
+
+      if (
+        response.status === 200 &&
+        response.headers.get("Content-Type")?.includes("text/html")
+      ) {
+        // Force browsers to ALWAYS revalidate HTML with server.
+        // `no-cache` is more aggressive than `max-age=0, must-revalidate`
+        // and ensures browser never uses stale HTML after deployments.
+        response.headers.set(
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate",
+        );
+        response.headers.set("Pragma", "no-cache");
+        response.headers.set("Expires", "0");
+        response.headers.set(
+          "X-Cache-Status",
+          `MISS; v=${cacheVersion}; build=${BUILD_ID}; project=${hostname}`,
+        );
+        setPageCspHeader(response);
+
+        const responseToCache = response.clone();
+        // CRITICAL FIX: Override Cache-Control for the internal Cache API storage
+        // We want the Edge to hold this "forever" (controlled by KV version invalidation)
+        // even though we tell the browser max-age=0.
+        responseToCache.headers.set(
+          "Cache-Control",
+          "public, max-age=31536000, immutable",
+        );
+
+        locals.runtime.ctx.waitUntil(cache.put(cacheKey, responseToCache));
+      } else {
+        response.headers.set("X-Cache-Status", "SKIP");
+      }
+
+      return response;
+    } catch (error) {
+      console.warn("Cache error in production:", error);
+      // Fallback to regular response if caching fails
+      const response = await next();
+      response.headers.set("X-Cache-Status", "ERROR");
+      return setPageCspHeader(response);
+    }
+  }
+
+  // Development or non-cacheable request
+  const response = await next();
+  if (isCloudflareEnv) {
+    response.headers.set("X-Cache-Status", "BYPASS");
+    if (!response.headers.has("Cache-Control")) {
+      response.headers.set(
+        "Cache-Control",
+        "private, no-cache, no-store, must-revalidate",
+      );
+    }
+  } else {
+    response.headers.set("X-Cache-Status", "DEV_MODE");
+    if (!response.headers.has("Cache-Control")) {
+      response.headers.set(
+        "Cache-Control",
+        "private, no-cache, no-store, must-revalidate",
+      );
+    }
+  }
+  return setPageCspHeader(response);
+});
+
+export const onRequest = cachingMiddleware;
