@@ -1,6 +1,49 @@
-# Scalius Commerce Lite Storefront
+<p align="center">
+  <a href="https://scalius.com">
+    <img alt="Scalius Commerce Storefront" src="https://raw.githubusercontent.com/scaliuslabs/scalius-commerce-lite/refs/heads/master/src/assets/logo-dark.png" width="200" />
+  </a>
+</p>
 
-A high-performance, modern e-commerce storefront template built with **Astro 5**, **React 19**, and **Tailwind CSS 4**. Designed to work seamlessly with the Open Source **Scalius Commerce Lite Backend**, this storefront is optimized for deployment on **Cloudflare Workers** with edge caching and zero cold starts.
+# Scalius Commerce Storefront
+
+<h4 align="center">
+  <a href="https://docs.scalius.com">Documentation</a> |
+  <a href="https://scalius.com">Website</a>
+</h4>
+
+<p align="center">
+  A high-performance, modern e-commerce storefront template built with **Astro 5**, **React 19**, and **Tailwind CSS 4**. Designed to work seamlessly with the Open Source **Scalius Commerce Lite Backend**, this storefront is optimized for deployment on **Cloudflare Workers** with edge caching and zero cold starts.
+</p>
+
+<p align="center">
+  <!-- License: MIT -->
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="Scalius Commerce Storefront is released under the MIT license." />
+  </a>
+  <!-- PRs Welcome -->
+  <a href="./CONTRIBUTING.md">
+    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
+  </a>
+  <!-- Security Policy -->
+  <a href="./SECURITY.md">
+    <img src="https://img.shields.io/badge/Security-Policy-red.svg" alt="Security Policy" />
+  </a>
+</p>
+
+<p align="center">
+  <!-- Twitter / X -->
+  <a href="https://scalius.com/x">
+    <img src="https://img.shields.io/twitter/follow/scaliuslabs.svg?label=Follow%20@scaliuslabs" alt="Follow @scaliuslabs" />
+  </a>
+  <!-- Discord -->
+  <a href="https://scalius.com/discord">
+    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
+  </a>
+  <!-- Facebook -->
+  <a href="https://scalius.com/facebook">
+    <img src="https://img.shields.io/badge/Facebook-Follow-1877F2?logo=facebook" alt="Follow on Facebook" />
+  </a>
+</p>
 
 ## 🚀 Key Features
 
@@ -64,8 +107,8 @@ A high-performance, modern e-commerce storefront template built with **Astro 5**
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/your-org/scalius-commerce-lite-storefront.git
-    cd scalius-commerce-lite-storefront
+    git clone https://github.com/scaliuslabs/scalius-commerce-storefront.git
+    cd scalius-commerce-storefront
     ```
 
 2.  Install dependencies:
@@ -165,4 +208,4 @@ The project uses a sophisticated `middleware.ts` to implements **L2 Caching** at
 
 ## 📄 License
 
-[MIT](LICENSE) © Scalius Labs
+[MIT](LICENSE) © Scalius
