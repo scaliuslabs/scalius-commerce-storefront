@@ -4,9 +4,7 @@
   </a>
 </p>
 
-<h1 align="center">
-  Scalius Commerce Storefront
-</h1>
+<h1 align="center">Scalius Commerce Storefront</h1>
 
 <h4 align="center">
   <a href="https://docs.scalius.com">Documentation</a> |
@@ -14,7 +12,7 @@
 </h4>
 
 <p align="center">
-  A high-performance, modern e-commerce storefront template built with **Astro 5**, **React 19**, and **Tailwind CSS 4**. Designed to work seamlessly with the Open Source **Scalius Commerce Lite Backend**, this storefront is optimized for deployment on **Cloudflare Workers** with edge caching and zero cold starts.
+  A high-performance, modern e-commerce storefront template built with <strong>Astro 5</strong>, <strong>React 19</strong>, and <strong>Tailwind CSS 4</strong>. Designed to work seamlessly with the Open Source <strong>Scalius Commerce Lite Backend</strong>, this storefront is optimized for deployment on <strong>Cloudflare Workers</strong> with edge caching and zero cold starts.
 </p>
 
 <p align="center">
