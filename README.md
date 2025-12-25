@@ -4,7 +4,9 @@
   </a>
 </p>
 
-# Scalius Commerce Storefront
+<h1 align="center">
+  Scalius Commerce Storefront
+</h1>
 
 <h4 align="center">
   <a href="https://docs.scalius.com">Documentation</a> |
