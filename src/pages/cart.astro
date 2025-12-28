@@ -8,23 +8,27 @@ import { Textarea } from "@/components/ui/textarea";
 import LocationSelector from "@/components/LocationSelector";
 import ShippingLocationSelector from "@/components/ShippingLocationSelector";
 import { getCities, processOrder } from "@/lib/cart/server";
-import type { LocationData } from "@/lib/api";
 import {
   getShippingMethods,
+  getLayoutData,
   type ShippingMethod,
   getActiveCheckoutLanguage,
   type CheckoutLanguageData,
 } from "@/lib/api";
 
-// Get cities using the server function which now calls the API
-const cities: LocationData[] = await getCities();
-
-// Fetch shipping methods
-const shippingMethodsResponse = await getShippingMethods();
+// Parallel fetch: layout + cities + shipping methods + checkout language
+const [
+  layoutData,
+  cities,
+  shippingMethodsResponse,
+  checkoutLanguageResponse,
+] = await Promise.all([
+  getLayoutData(),
+  getCities(),
+  getShippingMethods(),
+  getActiveCheckoutLanguage(),
+]);
 const shippingMethods: ShippingMethod[] = shippingMethodsResponse || [];
-
-// Fetch checkout language data
-const checkoutLanguageResponse = await getActiveCheckoutLanguage();
 const lang: CheckoutLanguageData = checkoutLanguageResponse || {
   id: "fallback",
   name: "English (Fallback)",
@@ -113,7 +117,7 @@ if (Astro.request.method === "POST") {
 }
 ---
 
-<Layout title={lang.languageData.pageTitle}>
+<Layout title={lang.languageData.pageTitle} layoutData={layoutData}>
   <main
     class="container max-w-6xl mx-auto px-2 pt-2 pb-3 sm:px-3 sm:pt-2 sm:pb-3"
   >

@@ -6,10 +6,12 @@ import CategoryFilters from "@/components/CategoryFilters";
 import {
   getAllProducts,
   getFilterableAttributes,
+  getLayoutData,
   type Product,
   type ProductListOptions,
   type PaginatedResponse,
   type FilterableAttribute,
+  type LayoutData,
 } from "@/lib/api";
 import {
   SlidersHorizontal,
@@ -27,6 +29,7 @@ const sortBy = params.get("sortBy") || "newest";
 
 let productsResponse: PaginatedResponse<Product> | null = null;
 let attributes: FilterableAttribute[] = [];
+let layoutData: LayoutData | null = null;
 let error: string | null = null;
 
 const productListOptions: ProductListOptions = {
@@ -47,10 +50,13 @@ for (const [key, value] of params.entries()) {
 }
 
 try {
-  const [fetchedProducts, fetchedAttributes] = await Promise.all([
+  // Parallel fetch: layout + products + attributes
+  const [fetchedLayoutData, fetchedProducts, fetchedAttributes] = await Promise.all([
+    getLayoutData(),
     getAllProducts(productListOptions),
     getFilterableAttributes({ searchQuery: query }),
   ]);
+  layoutData = fetchedLayoutData;
   productsResponse = fetchedProducts;
   attributes = fetchedAttributes || [];
 } catch (e) {
@@ -118,7 +124,7 @@ const analyticsProductData = products.map((p) => ({
 }));
 ---
 
-<Layout title={pageTitle} description={pageDescription}>
+<Layout title={pageTitle} description={pageDescription} layoutData={layoutData}>
   <main
     class="min-h-screen bg-gray-50"
     data-search-query={query}

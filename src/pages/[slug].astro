@@ -5,7 +5,7 @@
 
 import Layout from "../layouts/Layout.astro";
 import RichContent from "../components/RichContent.astro"; // CORRECTED: Path to RichContent
-import { getPageBySlug } from "../lib/api";
+import { getPageBySlug, getLayoutData } from "../lib/api";
 import { processShortcodes } from "../lib/shortcodes";
 
 // ... rest of the file is the same as in step 1 ...
@@ -50,7 +50,11 @@ if (!validSlugPattern.test(slug)) {
 }
 
 // === NOW SAFE TO MAKE API CALL ===
-const page = await getPageBySlug(slug);
+// Parallel fetch: layout + page data
+const [layoutData, page] = await Promise.all([
+  getLayoutData(),
+  getPageBySlug(slug),
+]);
 
 if (!page) {
   return Astro.redirect("/404");
@@ -79,6 +83,7 @@ const hasProductShortcode = processedContent.includes(
   description={description}
   hideHeader={page.hideHeader}
   hideFooter={page.hideFooter}
+  layoutData={layoutData}
 >
   {
     /* 

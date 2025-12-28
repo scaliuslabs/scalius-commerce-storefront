@@ -293,7 +293,7 @@ const optimizedImages = await Promise.all(
     const mainUrls: string[] = [];
     const zoomUrls: string[] = [];
     
-    thumbs.forEach((btn, i) => {
+    thumbs.forEach((btn, _i) => {
       const mainUrl = btn.dataset.imageUrl;
       const zoomUrl = btn.dataset.zoomUrl;
       if (mainUrl) mainUrls.push(mainUrl);

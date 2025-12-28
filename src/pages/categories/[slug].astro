@@ -5,10 +5,12 @@ import {
   getProductsByCategory,
   getCategoryBySlug,
   getFilterableAttributes,
+  getLayoutData,
   type Product,
   type ProductListOptions,
   type PaginatedResponse,
   type FilterableAttribute,
+  type LayoutData,
 } from "@/lib/api";
 import CategoryFilters from "@/components/CategoryFilters";
 import ProductCard from "@/components/cards/ProductCard.astro";
@@ -32,11 +34,17 @@ const sortBy = params.get("sortBy") || "newest";
 let category: any = null;
 let productsResponse: PaginatedResponse<Product> | null = null;
 let attributes: FilterableAttribute[] = [];
+let layoutData: LayoutData | null = null;
 let error: string | null = null;
 
 try {
-  // Get category first
-  category = await getCategoryBySlug(slug);
+  // Parallel fetch: layout + category data
+  const [fetchedLayoutData, fetchedCategory] = await Promise.all([
+    getLayoutData(),
+    getCategoryBySlug(slug),
+  ]);
+  layoutData = fetchedLayoutData;
+  category = fetchedCategory;
   if (!category) return Astro.redirect("/404");
 
   // Build product list options
@@ -127,7 +135,7 @@ const analyticsProductData = products.map((p) => ({
 }));
 ---
 
-<Layout title={pageTitle} description={pageDescription}>
+<Layout title={pageTitle} description={pageDescription} layoutData={layoutData}>
   <main
     class="min-h-screen bg-gray-50"
     data-category-name={category?.name}

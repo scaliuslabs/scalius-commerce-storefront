@@ -5,13 +5,17 @@ import ProductBreadcrumbs from "@/components/product/ProductBreadcrumbs.astro";
 import ProductGallery from "@/components/product/ProductGallery.astro";
 import ProductSummary from "@/components/product/ProductSummary.astro";
 import RelatedProducts from "@/components/product/RelatedProducts.astro";
+import { loadPageWithLayout } from "@/lib/page-data";
 
 const { slug } = Astro.params;
 if (!slug) {
   return Astro.redirect("/404");
 }
 
-const productData = await getProductBySlug(slug);
+// Parallel fetch: layout data + product data
+const { layoutData, pageData: productData } = await loadPageWithLayout(
+  () => getProductBySlug(slug)
+);
 if (!productData) {
   return Astro.redirect("/404");
 }
@@ -53,7 +57,7 @@ const pageTitle = product.metaTitle || product.name;
 const pageDescription = cleanMetaDescription;
 ---
 
-<Layout title={pageTitle} description={pageDescription}>
+<Layout title={pageTitle} description={pageDescription} layoutData={layoutData}>
   <main
     class="min-h-screen bg-white product-container"
     id="product-container"

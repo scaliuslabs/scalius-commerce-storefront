@@ -1,7 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import OrderSuccessButtons from "../components/OrderSuccessButtons";
-import { getOrderDetails, type Order, type OrderItem } from "@/lib/api";
+import { getOrderDetails, getLayoutData, type Order, type OrderItem, type LayoutData } from "@/lib/api";
 
 
 const orderId = Astro.url.searchParams.get("orderId");
@@ -11,10 +11,17 @@ if (!orderId) {
 }
 
 let order: Order | null = null;
+let layoutData: LayoutData | null = null;
 let errorFetching = false;
 
 try {
-  order = await getOrderDetails(orderId);
+  // Parallel fetch: layout + order details
+  const [fetchedLayoutData, fetchedOrder] = await Promise.all([
+    getLayoutData(),
+    getOrderDetails(orderId),
+  ]);
+  layoutData = fetchedLayoutData;
+  order = fetchedOrder;
   if (!order) {
     errorFetching = true;
     Astro.response.status = 404;
@@ -32,7 +39,7 @@ if (errorFetching || !order) {
 const orderItemsFromApi: OrderItem[] = order.items || [];
 ---
 
-<Layout title="Order Successful">
+<Layout title="Order Successful" layoutData={layoutData}>
   <main
     class="container mx-auto px-4 py-8 max-w-2xl"
     data-fb-order-details={JSON.stringify({

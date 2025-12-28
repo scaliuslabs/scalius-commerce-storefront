@@ -239,7 +239,7 @@ const dropdownPanelClass =
       const observer = new MutationObserver(() => {
         // When classes change (like is-scrolled), force update
         // specifically for instances that might have been hidden/zero-width
-        navs.forEach((nav) => {
+        navs.forEach((_nav) => {
           // @ts-ignore
           // We can't easily access the instance from here without storing it.
           // Re-instantiating is bad.

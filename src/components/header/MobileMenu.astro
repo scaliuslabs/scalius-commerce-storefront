@@ -115,10 +115,6 @@ function generateMenuId(item: NavigationItem, prefix: string = ""): string {
                                       <ul class="space-y-0.5 border-l border-gray-100 ml-2 pl-3 mt-0.5 py-1">
                                         {(level2Item.subMenu || []).map(
                                           (level3Item) => {
-                                            const level3Id = generateMenuId(
-                                              level3Item,
-                                              level2Id
-                                            );
                                             return (
                                               <li>
                                                 <a

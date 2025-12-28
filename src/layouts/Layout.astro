@@ -4,7 +4,7 @@ import "../styles/global.css";
 import Header from "../components/header/header.astro";
 import Footer from "../components/Footer.astro";
 import { Toaster } from "@/components/ui/sonner";
-import { getLayoutData } from "@/lib/api";
+import { getLayoutData, type LayoutData } from "@/lib/api";
 import type { AnalyticsConfig } from "@/lib/api";
 import CommandPalette from "@/components/search/CommandPalette";
 
@@ -13,6 +13,8 @@ interface Props {
   description?: string;
   hideHeader?: boolean;
   hideFooter?: boolean;
+  /** Pre-fetched layout data for parallel loading optimization */
+  layoutData?: LayoutData | null;
 }
 
 const {
@@ -20,10 +22,11 @@ const {
   description = "",
   hideHeader = false,
   hideFooter = false,
+  layoutData: providedLayoutData,
 } = Astro.props;
 
-// Single consolidated API call for all layout data
-const layoutData = await getLayoutData();
+// Use provided layout data if available (parallel fetch), otherwise fetch here (backward compat)
+const layoutData = providedLayoutData ?? await getLayoutData();
 
 const analyticsScripts: AnalyticsConfig[] = layoutData?.analytics || [];
 const navigationData = layoutData?.navigation || [];
