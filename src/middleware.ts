@@ -6,6 +6,10 @@ import { setPageCspHeader } from "@/lib/middleware-helper/csp-handler";
 import { setEdgeCacheContext } from "@/lib/edge-cache";
 import { BUILD_ID } from "@/config/build-id";
 
+// Timeout constants to prevent hanging on slow/unavailable services
+const KV_TIMEOUT_MS = 1000;
+const CACHE_MATCH_TIMEOUT_MS = 500;
+
 const CACHE_VERSION_KEY_PREFIX = "v_";
 
 const CACHEABLE_PATHS = [
@@ -70,13 +74,30 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
   const isCloudflareEnv = isCloudflareEnvironment();
   const kvBinding = locals.runtime?.env?.CACHE_CONTROL;
 
+  // Store cache version for reuse (avoid duplicate KV lookups)
+  let resolvedCacheVersion: string | null = null;
+  let cfCache: Cache | null = null;
+
   // Initialize edge cache context for ALL requests (not just cacheable paths)
   // This enables L2 caching for API functions on every page
   if (isCloudflareEnv && kvBinding) {
     try {
-      const cache = (caches as any).default as Cache;
+      cfCache = (caches as any).default as Cache;
       const projectCacheVersionKey = `${CACHE_VERSION_KEY_PREFIX}${hostname}`;
-      let cacheVersion = await kvBinding.get(projectCacheVersionKey);
+
+      // Add timeout to KV lookup to prevent hanging (per CF best practices)
+      let cacheVersion = await Promise.race([
+        kvBinding.get(projectCacheVersionKey),
+        new Promise<string | null>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("KV lookup timeout")),
+            KV_TIMEOUT_MS,
+          ),
+        ),
+      ]).catch((err) => {
+        console.warn("KV lookup timed out or failed:", err.message);
+        return null;
+      });
 
       if (!cacheVersion) {
         cacheVersion = "1";
@@ -85,9 +106,12 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
         );
       }
 
+      // Store for reuse in HTML caching below
+      resolvedCacheVersion = cacheVersion;
+
       // Set context for API functions (L2 caching)
       setEdgeCacheContext(
-        cache,
+        cfCache,
         cacheVersion,
         hostname,
         (promise: Promise<unknown>) => locals.runtime.ctx.waitUntil(promise),
@@ -99,14 +123,16 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
   }
 
   // HTML page caching (only for cacheable paths)
-  if (isGetRequest && isCacheablePath && kvBinding && isCloudflareEnv) {
+  if (
+    isGetRequest &&
+    isCacheablePath &&
+    kvBinding &&
+    isCloudflareEnv &&
+    cfCache
+  ) {
     try {
-      // Access cache using Cloudflare Workers API
-      const cache = (caches as any).default as Cache;
-
-      // Get cache version (already fetched above, but we need it for HTML cache key)
-      const projectCacheVersionKey = `${CACHE_VERSION_KEY_PREFIX}${hostname}`;
-      const cacheVersion = (await kvBinding.get(projectCacheVersionKey)) || "1";
+      // Reuse cache version from above (no duplicate KV lookup)
+      const cacheVersion = resolvedCacheVersion || "1";
 
       const cacheUrl = buildCacheKeyUrl(new URL(request.url));
       // IMPORTANT: include BUILD_ID so new deployments never serve stale HTML
@@ -114,7 +140,13 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
       cacheUrl.searchParams.set("cache_v", `${cacheVersion}-${BUILD_ID}`);
       const cacheKey = new Request(cacheUrl.toString(), request);
 
-      let cachedResponse = await cache.match(cacheKey);
+      // Add timeout to cache.match to prevent hanging (per CF best practices)
+      const cachedResponse = await Promise.race([
+        cfCache.match(cacheKey),
+        new Promise<Response | undefined>((resolve) =>
+          setTimeout(() => resolve(undefined), CACHE_MATCH_TIMEOUT_MS),
+        ),
+      ]);
 
       if (cachedResponse) {
         const response = new Response(cachedResponse.body, cachedResponse);
@@ -153,7 +185,7 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
           "public, max-age=31536000, immutable",
         );
 
-        locals.runtime.ctx.waitUntil(cache.put(cacheKey, responseToCache));
+        locals.runtime.ctx.waitUntil(cfCache.put(cacheKey, responseToCache));
       } else {
         response.headers.set("X-Cache-Status", "SKIP");
       }

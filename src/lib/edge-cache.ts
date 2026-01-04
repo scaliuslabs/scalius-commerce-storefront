@@ -16,6 +16,9 @@ import { BUILD_ID } from "@/config/build-id";
 
 const DEFAULT_TTL_SECONDS = 8640000; // 24 hours - purge-cache handles invalidation
 
+// Timeout for L2 cache operations to prevent hanging (per CF best practices)
+const L2_CACHE_TIMEOUT_MS = 500;
+
 interface EdgeCacheOptions {
   ttlSeconds?: number;
 }
@@ -54,6 +57,10 @@ export function setEdgeCacheContext(
   hostname: string,
   waitUntil: ((promise: Promise<any>) => void) | null,
 ): void {
+  // Clear inflight map on new request to prevent dead promise issues
+  // Per CF docs: module-level mutable state can cause issues with isolate reuse
+  // If a previous request was interrupted, its promise may never resolve
+  inflight.clear();
   cacheContext = { cache, kvVersion, hostname, waitUntil };
 }
 
@@ -96,7 +103,14 @@ async function getFromL2<T>(key: string): Promise<T | null> {
 
   try {
     const cacheKeyUrl = buildL2CacheKey(key);
-    const cachedResponse = await cacheContext.cache.match(cacheKeyUrl);
+
+    // Add timeout to cache.match to prevent hanging (per CF best practices)
+    const cachedResponse = await Promise.race([
+      cacheContext.cache.match(cacheKeyUrl),
+      new Promise<Response | undefined>((resolve) =>
+        setTimeout(() => resolve(undefined), L2_CACHE_TIMEOUT_MS),
+      ),
+    ]);
 
     if (cachedResponse) {
       const data = await cachedResponse.json();

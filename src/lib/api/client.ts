@@ -99,9 +99,6 @@ export async function fetchWithRetry(
   timeout = 8000,
   requiresAuth = true,
 ): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
   try {
     const headers = new Headers(options.headers || {});
     if (requiresAuth) {
@@ -114,13 +111,12 @@ export async function fetchWithRetry(
       }
     }
 
+    // Use AbortSignal.timeout() per CF best practices - cleaner than manual AbortController
     const response = await fetch(url, {
       ...options,
       headers,
-      signal: controller.signal,
+      signal: AbortSignal.timeout(timeout),
     });
-
-    clearTimeout(timeoutId);
 
     const newToken = response.headers.get("X-New-Token");
     if (newToken) {
@@ -138,7 +134,6 @@ export async function fetchWithRetry(
 
     return response;
   } catch (error) {
-    clearTimeout(timeoutId);
     if (retries > 0) {
       console.warn(`Fetch to ${url} failed. Retrying... (${retries} left)`);
       await new Promise((resolve) => setTimeout(resolve, 300 * (3 - retries)));
