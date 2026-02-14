@@ -461,6 +461,11 @@ function handleRemoveDiscount() {
 
 // --- Initialization ---
 export async function initCartFunctionality() {
+  // Clear any stale discount on page load — customers must re-apply at checkout
+  if (cartStore.get().discount) {
+    cartStore.setKey("discount", null);
+  }
+
   // --- MODIFIED: Call the new quick buy processor first ---
   processQuickBuy();
 
@@ -488,6 +493,11 @@ export async function initCartFunctionality() {
 
   window.addEventListener("shippingLocationChange", (e) => {
     window.lastShippingEventDetail = (e as CustomEvent).detail;
+    // Reset discount when delivery option changes
+    if (cartStore.get().discount) {
+      removeDiscount();
+      showDiscountMessage("Discount removed — delivery option changed.", "info");
+    }
     updateTotals();
     handleAbandonedCheckout();
   });

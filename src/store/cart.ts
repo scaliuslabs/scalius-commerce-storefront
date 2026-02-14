@@ -82,6 +82,11 @@ function generateCartItemKey(
 export function addToCart(
   item: Omit<CartItem, "quantity"> & { quantity?: number },
 ) {
+  // Reset discount when cart contents change
+  if (cartStore.get().discount) {
+    cartStore.setKey("discount", null);
+  }
+
   const currentItems = cartStore.get().items;
   const itemKey = generateCartItemKey(item);
   const existingItem = currentItems[itemKey];
@@ -115,6 +120,11 @@ export function addToCart(
 
 // Remove item from cart
 export function removeFromCart(itemId: string, variantId?: string) {
+  // Reset discount when cart contents change
+  if (cartStore.get().discount) {
+    cartStore.setKey("discount", null);
+  }
+
   const currentItems = cartStore.get().items;
 
   // Try to find the item using different key patterns
@@ -173,6 +183,11 @@ export function updateQuantity(
   if (quantity <= 0) {
     removeFromCart(itemId, variantId);
     return;
+  }
+
+  // Reset discount when cart contents change
+  if (cartStore.get().discount) {
+    cartStore.setKey("discount", null);
   }
 
   cartStore.setKey("items", {
