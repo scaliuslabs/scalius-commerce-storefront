@@ -13,6 +13,7 @@ import {
   type LayoutData,
 } from "@/lib/api";
 import CategoryFilters from "@/components/CategoryFilters";
+import RichContent from "@/components/RichContent.astro";
 import ProductCard from "@/components/cards/ProductCard.astro";
 import {
   SlidersHorizontal,
@@ -163,7 +164,11 @@ const analyticsProductData = products.map((p) => ({
             </h1>
             {
               category?.description && (
-                <p class="text-gray-500 text-lg">{category.description}</p>
+                <RichContent
+                  content={category.description}
+                  className="text-gray-500 text-lg"
+                  processShortcodes={false}
+                />
               )
             }
           </div>
