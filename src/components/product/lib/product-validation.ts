@@ -198,7 +198,7 @@ export interface AddToCartValidation {
   valid: boolean;
   errors: string[];
   data: {
-    productId: string;
+    id: string;
     slug: string;
     name: string;
     price: number;
@@ -270,7 +270,7 @@ export function validateAddToCart(input: {
     valid: true,
     errors: [],
     data: {
-      productId: input.productId!,
+      id: input.productId!,
       slug: input.slug!,
       name: input.name!,
       price: input.price!,

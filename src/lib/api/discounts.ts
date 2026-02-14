@@ -31,7 +31,14 @@ export async function validateDiscount(
     if (shippingCost !== undefined) params.append("shippingCost", String(shippingCost));
     if (customerPhone) params.append("customerPhone", customerPhone);
     if (items && items.length > 0) {
-      params.append("items", JSON.stringify(items));
+      // Only send fields the API needs to keep URLs short and match cartItemSchema
+      const apiItems = items.map((item: any) => ({
+        id: item.id || item.productId,
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        ...(item.variantId ? { variantId: item.variantId } : {}),
+      }));
+      params.append("items", JSON.stringify(apiItems));
     }
     
     const url = createApiUrl(`/discounts/validate?${params.toString()}`);
