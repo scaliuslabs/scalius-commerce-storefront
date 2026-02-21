@@ -4,17 +4,28 @@
  * Parse additional domains from CSP_ALLOWED environment variable
  * and add them with wildcard subdomains to CSP directives
  */
-function parseAdditionalDomains(): string[] {
-  const additionalDomains = process.env.CSP_ALLOWED?.trim();
+async function parseAdditionalDomains(env?: any): Promise<string[]> {
+  let additionalDomains = (env?.CSP_ALLOWED || process.env.CSP_ALLOWED)?.trim();
+  try {
+    if (env?.CACHE_CONTROL) {
+      const cached = await env.CACHE_CONTROL.get("security:csp_allowed_domains");
+      if (cached !== null) {
+        additionalDomains = cached;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to read CSP_ALLOWED from KV Cache", e);
+  }
+
   if (!additionalDomains) {
     return [];
   }
 
   return additionalDomains
     .split(",")
-    .map((domain) => domain.trim())
-    .filter((domain) => domain.length > 0)
-    .flatMap((domain) => {
+    .map((domain: string) => domain.trim())
+    .filter((domain: string) => domain.length > 0)
+    .flatMap((domain: string) => {
       // Remove protocol if present
       const cleanDomain = domain.replace(/^https?:\/\//, "");
       // Add both the domain and its wildcard subdomain
@@ -70,8 +81,8 @@ const COMMON_THIRD_PARTY_DOMAINS = [
 ];
 
 // Generate script-src directives
-function getScriptSrcDirectives(): string[] {
-  const additionalDomains = parseAdditionalDomains();
+async function getScriptSrcDirectives(env?: any): Promise<string[]> {
+  const additionalDomains = await parseAdditionalDomains(env);
   return [
     ...ESSENTIAL_SCRIPT_SRC,
     ...COMMON_THIRD_PARTY_DOMAINS,
@@ -80,9 +91,10 @@ function getScriptSrcDirectives(): string[] {
 }
 
 // Generate connect-src directives
-function getConnectSrcDirectives(): string[] {
-  const additionalDomains = parseAdditionalDomains();
-  return [
+async function getConnectSrcDirectives(env?: any): Promise<string[]> {
+  const additionalDomains = await parseAdditionalDomains(env);
+  const apiUrl = (env?.PUBLIC_API_BASE_URL || import.meta.env.PUBLIC_API_BASE_URL || "")?.trim();
+  const directives = [
     ...ESSENTIAL_CONNECT_SRC,
     ...COMMON_THIRD_PARTY_DOMAINS,
     "https://connect.facebook.net", // For Facebook Pixel script/connections
@@ -90,11 +102,18 @@ function getConnectSrcDirectives(): string[] {
     "https://*.facebook.com", // For FB API calls by the pixel
     ...additionalDomains,
   ];
+
+  if (apiUrl) {
+    const cleanApiUrl = apiUrl.replace(/^https?:\/\//, "");
+    directives.push(`https://${cleanApiUrl}`, `https://*.${cleanApiUrl}`);
+  }
+
+  return directives;
 }
 
 // Generate frame-src directives
-function getFrameSrcDirectives(): string[] {
-  const additionalDomains = parseAdditionalDomains();
+async function getFrameSrcDirectives(env?: any): Promise<string[]> {
+  const additionalDomains = await parseAdditionalDomains(env);
   return [
     ...ESSENTIAL_FRAME_SRC,
     "https://*.google.com", // For Google services like reCAPTCHA
@@ -105,18 +124,26 @@ function getFrameSrcDirectives(): string[] {
 }
 
 // Generate img-src directives
-function getImgSrcDirectives(): string[] {
-  const additionalDomains = parseAdditionalDomains();
-  return [
+async function getImgSrcDirectives(env?: any): Promise<string[]> {
+  const additionalDomains = await parseAdditionalDomains(env);
+  const cdnUrl = (env?.CDN_DOMAIN_URL || import.meta.env.CDN_DOMAIN_URL || "")?.trim();
+  const directives = [
     ...ESSENTIAL_IMG_SRC,
     "https://www.facebook.com", // For Facebook Pixel noscript tag
     ...additionalDomains,
   ];
+
+  if (cdnUrl) {
+    const cleanCdnUrl = cdnUrl.replace(/^https?:\/\//, "");
+    directives.push(`https://${cleanCdnUrl}`, `https://*.${cleanCdnUrl}`);
+  }
+
+  return directives;
 }
 
 // Generate worker-src directives
-function getWorkerSrcDirectives(): string[] {
-  const additionalDomains = parseAdditionalDomains();
+async function getWorkerSrcDirectives(env?: any): Promise<string[]> {
+  const additionalDomains = await parseAdditionalDomains(env);
   return [...ESSENTIAL_WORKER_SRC, ...additionalDomains];
 }
 
@@ -124,21 +151,22 @@ function getWorkerSrcDirectives(): string[] {
  * Applies Content Security Policy (CSP) headers to a given Response object.
  *
  * @param response The Astro Response object to modify.
+ * @param env Cloudflare runtime environment object
  * @returns The Response object with CSP headers applied.
  */
-export function setPageCspHeader(response: Response): Response {
+export async function setPageCspHeader(response: Response, env?: any): Promise<Response> {
   const cspDirectives = [
-    `script-src ${getScriptSrcDirectives().join(" ")}`,
-    `connect-src ${getConnectSrcDirectives().join(" ")}`,
-    `frame-src ${getFrameSrcDirectives().join(" ")}`,
-    `img-src ${getImgSrcDirectives().join(" ")}`,
+    `script-src ${(await getScriptSrcDirectives(env)).join(" ")}`,
+    `connect-src ${(await getConnectSrcDirectives(env)).join(" ")}`,
+    `frame-src ${(await getFrameSrcDirectives(env)).join(" ")}`,
+    `img-src ${(await getImgSrcDirectives(env)).join(" ")}`,
     "object-src 'none'", // Disallow plugins like Flash
-    `worker-src ${getWorkerSrcDirectives().join(" ")}`,
+    `worker-src ${(await getWorkerSrcDirectives(env)).join(" ")}`,
     "base-uri 'self'",
     "form-action 'self' https://www.facebook.com", // Allow form submissions to self and Facebook
     "frame-ancestors 'self'", // Prevent clickjacking
   ];
 
-  response.headers.set("Content-Security-Policy", cspDirectives.join("; "));
+  response.headers.set("Content-Security-Policy", [...new Set(cspDirectives)].join("; "));
   return response;
 }

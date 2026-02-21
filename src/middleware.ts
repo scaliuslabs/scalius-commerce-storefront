@@ -152,7 +152,7 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
         const response = new Response(cachedResponse.body, cachedResponse);
         const cacheStatus = `HIT; v=${cacheVersion}; build=${BUILD_ID}; project=${hostname}`;
         response.headers.set("X-Cache-Status", cacheStatus);
-        return setPageCspHeader(response);
+        return await setPageCspHeader(response, locals.runtime?.env);
       }
 
       const response = await next();
@@ -174,7 +174,7 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
           "X-Cache-Status",
           `MISS; v=${cacheVersion}; build=${BUILD_ID}; project=${hostname}`,
         );
-        setPageCspHeader(response);
+        await setPageCspHeader(response, locals.runtime?.env);
 
         const responseToCache = response.clone();
         // CRITICAL FIX: Override Cache-Control for the internal Cache API storage
@@ -196,7 +196,7 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
       // Fallback to regular response if caching fails
       const response = await next();
       response.headers.set("X-Cache-Status", "ERROR");
-      return setPageCspHeader(response);
+      return await setPageCspHeader(response, locals.runtime?.env);
     }
   }
 
@@ -219,7 +219,7 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
       );
     }
   }
-  return setPageCspHeader(response);
+  return await setPageCspHeader(response, locals.runtime?.env);
 });
 
 export const onRequest = cachingMiddleware;

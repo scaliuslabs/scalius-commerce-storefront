@@ -18,10 +18,9 @@ const headerData: HeaderData = {
     text: apiHeaderData?.topBar?.text || "",
     isEnabled: apiHeaderData?.topBar?.isEnabled ?? true,
   },
-  logo: apiHeaderData?.logo || {
-    src: "/placeholder-logo.png",
-    alt: "Store Logo",
-  },
+  logo: (apiHeaderData?.logo?.src)
+    ? apiHeaderData.logo
+    : { src: "", alt: apiHeaderData?.logo?.alt || "Store" },
   contact: {
     phone: apiHeaderData?.contact?.phone || "",
     text: apiHeaderData?.contact?.text || "",

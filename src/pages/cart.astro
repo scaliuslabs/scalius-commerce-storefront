@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LocationSelector from "@/components/LocationSelector";
 import ShippingLocationSelector from "@/components/ShippingLocationSelector";
+import CustomerLoginWidget from "@/components/CustomerLoginWidget";
 import { getCities, processOrder } from "@/lib/cart/server";
 import {
   getShippingMethods,
@@ -14,21 +15,26 @@ import {
   type ShippingMethod,
   getActiveCheckoutLanguage,
   type CheckoutLanguageData,
+  getCheckoutConfig,
+  isCodOnly,
 } from "@/lib/api";
 
-// Parallel fetch: layout + cities + shipping methods + checkout language
+// Parallel fetch: layout + cities + shipping methods + checkout language + checkout config
 const [
   layoutData,
   cities,
   shippingMethodsResponse,
   checkoutLanguageResponse,
+  checkoutConfig,
 ] = await Promise.all([
   getLayoutData(),
   getCities(),
   getShippingMethods(),
   getActiveCheckoutLanguage(),
+  getCheckoutConfig(),
 ]);
 const shippingMethods: ShippingMethod[] = shippingMethodsResponse || [];
+const codOnly = isCodOnly(checkoutConfig);
 const lang: CheckoutLanguageData = checkoutLanguageResponse || {
   id: "fallback",
   name: "English (Fallback)",
@@ -83,8 +89,10 @@ let errorMessage = "";
 let successOrderId = "";
 let isProcessing = false;
 
-// Handle form submission
-if (Astro.request.method === "POST") {
+// Handle form submission — only for COD-only flow.
+// When multiple gateways are active, the form is intercepted client-side
+// and the user is redirected to /checkout for payment selection.
+if (Astro.request.method === "POST" && codOnly) {
   try {
     isProcessing = true;
     const formData = await Astro.request.formData();
@@ -115,9 +123,22 @@ if (Astro.request.method === "POST") {
     isProcessing = false;
   }
 }
+
+// Determine submit button label
+const submitLabel = codOnly
+  ? lang.languageData.placeOrderText
+  : "Proceed to Payment →";
 ---
 
 <Layout title={lang.languageData.pageTitle} layoutData={layoutData}>
+  <!-- Hidden checkout meta for client-side JS -->
+  <div
+    id="checkout-meta"
+    data-cod-only={codOnly ? "true" : "false"}
+    data-gateways={JSON.stringify(checkoutConfig.gateways)}
+    hidden
+  ></div>
+
   <main
     class="container max-w-6xl mx-auto px-2 pt-2 pb-3 sm:px-3 sm:pt-2 sm:pb-3"
   >
@@ -251,7 +272,7 @@ if (Astro.request.method === "POST") {
           </div>
         </div>
 
-        <!-- Trust badges or support info could go here -->
+        <!-- Trust badges -->
         <div class="mt-4 text-center">
           <p class="text-[10px] text-gray-400">
             Secure Checkout • SSL Encrypted
@@ -261,6 +282,12 @@ if (Astro.request.method === "POST") {
 
       <!-- Checkout Form Section - Left on Desktop -->
       <div class="lg:w-7/12 order-1 lg:order-2">
+
+        <!-- Optional customer login widget -->
+        <div class="mb-3">
+          <CustomerLoginWidget client:idle />
+        </div>
+
         <div
           class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 mb-3"
         >
@@ -403,12 +430,8 @@ if (Astro.request.method === "POST") {
                 id="submitButton"
                 disabled={isProcessing}
               >
-                <span class="relative z-10">
-                  {
-                    isProcessing
-                      ? lang.languageData.processingText
-                      : lang.languageData.placeOrderText
-                  }
+                <span class="relative z-10" id="submitButtonText">
+                  {isProcessing ? lang.languageData.processingText : submitLabel}
                 </span>
               </Button>
 
@@ -423,7 +446,7 @@ if (Astro.request.method === "POST") {
   </main>
 </Layout>
 
-<!-- Loading overlay - will be shown via JavaScript -->
+<!-- Loading overlay -->
 <div
   id="loadingOverlay"
   style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 99999; backdrop-filter: blur(4px);"
@@ -459,178 +482,161 @@ if (Astro.request.method === "POST") {
   // Initialize cart functionality
   initCartFunctionality();
 
-  // Add form submission validation
+  // ── Customer login pre-fill ───────────────────────────────────────────────
+  // Listens for the custom "customer-login" event dispatched by CustomerLoginWidget.
+  // Pre-fills the checkout form with the customer's known data.
+  window.addEventListener("customer-login", (e: any) => {
+    const customer = e.detail;
+    if (customer?.name) {
+      const el = document.getElementById("customerName") as HTMLInputElement;
+      if (el && !el.value) el.value = customer.name;
+    }
+    if (customer?.phone) {
+      const el = document.getElementById("customerPhone") as HTMLInputElement;
+      if (el && !el.value) {
+        // Normalize to BD format
+        let phone = customer.phone.replace(/^\+?880/, "");
+        if (phone.startsWith("1")) phone = "0" + phone;
+        el.value = phone;
+      }
+    }
+    if (customer?.email) {
+      const el = document.getElementById("customerEmail") as HTMLInputElement;
+      if (el && !el.value) el.value = customer.email;
+    }
+  });
+
+  // ── Multi-gateway checkout redirect ──────────────────────────────────────
+  const meta = document.getElementById("checkout-meta");
+  const codOnly = meta?.dataset.codOnly === "true";
+
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("checkoutForm") as HTMLFormElement;
-    const submitButton = document.getElementById(
-      "submitButton"
-    ) as HTMLButtonElement;
-    const loadingOverlay = document.getElementById(
-      "loadingOverlay"
-    ) as HTMLElement;
-    const progressBar = document.getElementById(
-      "loadingProgressBar"
-    ) as HTMLElement;
+    const submitButton = document.getElementById("submitButton") as HTMLButtonElement;
+    const loadingOverlay = document.getElementById("loadingOverlay") as HTMLElement;
+    const progressBar = document.getElementById("loadingProgressBar") as HTMLElement;
 
-    // Function to check if cart is empty
     const isCartEmpty = () => {
-      const cartItemsInput = document.getElementById(
-        "cartItemsInput"
-      ) as HTMLInputElement;
-
-      return (
-        !cartItemsInput ||
-        !cartItemsInput.value ||
-        cartItemsInput.value === "{}" ||
-        cartItemsInput.value === "[]"
-      );
+      const input = document.getElementById("cartItemsInput") as HTMLInputElement;
+      return !input?.value || input.value === "{}" || input.value === "[]";
     };
 
-    // Disable submit button if cart is empty
     const updateCheckoutButtonState = () => {
       if (submitButton) {
         const empty = isCartEmpty();
         submitButton.disabled = empty;
-        submitButton.title = empty
-          ? "Your cart is empty. Please add items to your cart before placing an order."
-          : "";
-
-        if (empty) {
-          submitButton.classList.add("opacity-50", "cursor-not-allowed");
-        } else {
-          submitButton.classList.remove("opacity-50", "cursor-not-allowed");
-        }
+        if (empty) submitButton.classList.add("opacity-50", "cursor-not-allowed");
+        else submitButton.classList.remove("opacity-50", "cursor-not-allowed");
       }
     };
 
-    // Update button state on page load and when cart changes
     updateCheckoutButtonState();
     window.addEventListener("cart-updated", updateCheckoutButtonState);
 
-    if (form && submitButton && loadingOverlay && progressBar) {
-      form.addEventListener("submit", (e) => {
-        // Check if cart is empty
-        if (isCartEmpty()) {
-          e.preventDefault();
-          alert(
-            "Your cart is empty. Please add items to your cart before placing an order."
-          );
-          return false;
-        }
+    if (!form || !submitButton) return;
 
-        // Check required fields
-        const requiredFields = [
-          "customerName",
-          "customerPhone",
-          "shippingAddress",
-          "shippingLocation",
-          "city",
-          "zone",
-        ];
-
-        let missingFields = [];
-        for (const field of requiredFields) {
-          const element = document.querySelector(`[name="${field}"]`) as
-            | HTMLInputElement
-            | HTMLTextAreaElement
-            | null;
-          if (!element || !element.value) {
-            missingFields.push(field);
-          }
-        }
-
-        if (missingFields.length > 0) {
-          e.preventDefault();
-          alert(
-            `Please fill in all required fields: ${missingFields.join(", ")}`
-          );
-          return false;
-        }
-
-        // Show loading state
-        submitButton.disabled = true;
-        submitButton.textContent = "Processing...";
-
-        // Show loading overlay
-        loadingOverlay.style.display = "block";
-        document.body.style.overflow = "hidden"; // Prevent scrolling
-
-        // Scroll to top to ensure overlay is visible
-        window.scrollTo(0, 0);
-
-        // Animate progress bar
-        progressBar.style.width = "0%";
-        setTimeout(() => {
-          progressBar.style.width = "30%";
-        }, 300);
-        setTimeout(() => {
-          progressBar.style.width = "60%";
-        }, 1000);
-        setTimeout(() => {
-          progressBar.style.width = "80%";
-        }, 2000);
-
-        // Form will submit normally
-        return true;
-      });
-    }
-  });
-
-  function setupPiiCapture() {
-    const phoneInput = document.getElementById(
-      "customerPhone"
-    ) as HTMLInputElement;
-    const emailInput = document.getElementById(
-      "customerEmail"
-    ) as HTMLInputElement;
-
-    const saveToSession = (key: string, value: string) => {
-      if (!value || !value.trim()) {
-        sessionStorage.removeItem(key);
+    form.addEventListener("submit", (e) => {
+      // Cart empty check
+      if (isCartEmpty()) {
+        e.preventDefault();
+        alert("Your cart is empty. Please add items before placing an order.");
         return;
       }
-      try {
-        sessionStorage.setItem(key, value.trim());
-      } catch (e) {
-        console.warn(`Could not save to sessionStorage:`, e);
+
+      // Required fields validation
+      const requiredFields = ["customerName", "customerPhone", "shippingAddress", "shippingLocation", "city", "zone"];
+      const missing: string[] = [];
+      for (const field of requiredFields) {
+        const el = document.querySelector(`[name="${field}"]`) as HTMLInputElement | null;
+        if (!el?.value?.trim()) missing.push(field);
       }
+      if (missing.length > 0) {
+        e.preventDefault();
+        alert(`Please fill in all required fields: ${missing.join(", ")}`);
+        return;
+      }
+
+      if (!codOnly) {
+        // ── Multi-gateway flow: intercept and redirect to /checkout ──
+        e.preventDefault();
+
+        // Collect all form data + cart items into sessionStorage
+        const formData = new FormData(form);
+        const checkoutData: Record<string, string> = {};
+        formData.forEach((value, key) => {
+          checkoutData[key] = value as string;
+        });
+
+        // Also grab location hidden fields that may not be in formData
+        const fields = ["city", "zone", "area", "shippingLocation", "cityName", "zoneName", "areaName"];
+        for (const f of fields) {
+          const el = document.querySelector(`[name="${f}"]`) as HTMLInputElement | null;
+          if (el) checkoutData[f] = el.value;
+        }
+
+        // Capture the current shipping fee from the ShippingLocationSelector
+        const shippingFee = (window as any).lastShippingEventDetail?.fee ?? 0;
+        checkoutData["shippingCharge"] = String(shippingFee);
+
+        try {
+          sessionStorage.setItem("scalius_checkout_data", JSON.stringify(checkoutData));
+          sessionStorage.setItem("scalius_checkout_gateways", meta?.dataset.gateways || "[]");
+        } catch {
+          // sessionStorage full — proceed anyway
+        }
+
+        window.location.href = "/checkout";
+        return;
+      }
+
+      // ── COD-only flow: normal form POST ──
+      submitButton.disabled = true;
+      submitButton.textContent = "Processing...";
+      if (loadingOverlay) {
+        loadingOverlay.style.display = "block";
+        document.body.style.overflow = "hidden";
+        window.scrollTo(0, 0);
+      }
+      if (progressBar) {
+        progressBar.style.width = "0%";
+        setTimeout(() => { progressBar.style.width = "30%"; }, 300);
+        setTimeout(() => { progressBar.style.width = "60%"; }, 1000);
+        setTimeout(() => { progressBar.style.width = "80%"; }, 2000);
+      }
+    });
+  });
+
+  // ── PII capture (save phone/email in sessionStorage) ────────────────────
+  function setupPiiCapture() {
+    const phoneInput = document.getElementById("customerPhone") as HTMLInputElement;
+    const emailInput = document.getElementById("customerEmail") as HTMLInputElement;
+
+    const save = (key: string, value: string) => {
+      if (!value?.trim()) { sessionStorage.removeItem(key); return; }
+      try { sessionStorage.setItem(key, value.trim()); } catch {}
     };
 
     if (phoneInput) {
-      phoneInput.addEventListener("change", () => {
-        saveToSession("scalius_user_phone", phoneInput.value);
-      });
+      phoneInput.addEventListener("change", () => save("scalius_user_phone", phoneInput.value));
+      const saved = sessionStorage.getItem("scalius_user_phone");
+      if (saved && !phoneInput.value) phoneInput.value = saved;
     }
-
     if (emailInput) {
-      emailInput.addEventListener("change", () => {
-        saveToSession("scalius_user_email", emailInput.value);
-      });
+      emailInput.addEventListener("change", () => save("scalius_user_email", emailInput.value));
+      const saved = sessionStorage.getItem("scalius_user_email");
+      if (saved && !emailInput.value) emailInput.value = saved;
     }
-
-    // Pre-populate fields if data already exists in session
-    const savedPhone = sessionStorage.getItem("scalius_user_phone");
-    if (savedPhone && phoneInput) phoneInput.value = savedPhone;
-
-    const savedEmail = sessionStorage.getItem("scalius_user_email");
-    if (savedEmail && emailInput) emailInput.value = savedEmail;
   }
 
   document.addEventListener("DOMContentLoaded", setupPiiCapture);
   document.addEventListener("astro:page-load", setupPiiCapture);
 
+  // ── Abandoned checkout tracking ───────────────────────────────────────────
   function setupFormListeners() {
     const form = document.getElementById("checkoutForm") as HTMLFormElement;
     if (!form) return;
-
-    form.addEventListener("input", (event) => {
-      console.log(
-        "[cart.astro] Form input event fired for:",
-        (event.target as HTMLElement).id
-      );
-      if (window.handleAbandonedCheckout) {
-        window.handleAbandonedCheckout();
-      }
+    form.addEventListener("input", () => {
+      if ((window as any).handleAbandonedCheckout) (window as any).handleAbandonedCheckout();
     });
   }
 
@@ -639,104 +645,24 @@ if (Astro.request.method === "POST") {
 </script>
 
 <style>
-  /* Custom scrollbar */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #e5e7eb transparent;
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb;
-    border-radius: 3px;
-  }
-
-  /* Prevent layout shifts */
-  /* form {
-    contain: content;
-  } */
-
-  /* Ensure proper stacking for dropdowns */
-  .space-y-2 > div,
-  .space-y-2\.5 > div {
-    position: relative;
-  }
-
-  /* Improve form field accessibility */
-  input:focus,
-  textarea:focus,
-  button:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-  }
-
-  /* Loading animation */
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Responsive adjustments */
+  * { scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 3px; }
+  .space-y-2 > div, .space-y-2\.5 > div { position: relative; }
+  input:focus, textarea:focus, button:focus { outline: 2px solid #3b82f6; outline-offset: 2px; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   @media (max-width: 640px) {
-    .container {
-      padding-left: 8px; /* Further reduced for mobile */
-      padding-right: 8px; /* Further reduced for mobile */
-    }
-    .text-lg {
-      /* Compact large text on mobile */
-      font-size: 1rem; /* Equivalent to text-base */
-    }
-    .text-xl {
-      /* Compact XL text on mobile */
-      font-size: 1.125rem; /* Equivalent to text-lg */
-    }
-    .py-3 {
-      /* Compact button padding */
-      padding-top: 0.5rem; /* py-2, adjusted from py-2.5 */
-      padding-bottom: 0.5rem;
-    }
-    .px-4 {
-      /* Compact general padding */
-      padding-left: 0.75rem; /* px-3 */
-      padding-right: 0.75rem;
-    }
-    /* Make form inputs and buttons slightly more compact on mobile */
-    .h-9 {
-      /* Target specific height */
-      height: 2rem; /* h-8 */
-    }
-    .h-10 {
-      /* Target specific height */
-      height: 2.25rem; /* h-9 */
-    }
-    .px-2\.5 {
-      /* Target specific padding */
-      padding-left: 0.5rem; /* px-2 */
-      padding-right: 0.5rem; /* px-2 */
-    }
-    .py-1\.5 {
-      /* Target specific padding */
-      padding-top: 0.25rem; /* py-1 */
-      padding-bottom: 0.25rem; /* py-1 */
-    }
-    .min-h-\[4\.5rem\] {
-      /* Target specific min-height */
-      min-height: 3.5rem;
-    }
-    .min-h-\[4rem\] {
-      /* Target specific min-height */
-      min-height: 3rem;
-    }
+    .container { padding-left: 8px; padding-right: 8px; }
+    .text-lg { font-size: 1rem; }
+    .text-xl { font-size: 1.125rem; }
+    .py-3 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .px-4 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .h-9 { height: 2rem; }
+    .h-10 { height: 2.25rem; }
+    .px-2\.5 { padding-left: 0.5rem; padding-right: 0.5rem; }
+    .py-1\.5 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .min-h-\[4\.5rem\] { min-height: 3.5rem; }
+    .min-h-\[4rem\] { min-height: 3rem; }
   }
 </style>

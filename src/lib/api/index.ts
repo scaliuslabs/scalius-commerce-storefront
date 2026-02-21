@@ -32,3 +32,7 @@ export * from "./abandoned-checkouts";
 
 export * from "./storefront";
 export * from "./types";
+
+export * from "./customer-auth";
+export * from "./checkout";
+export * from "./payment";
