@@ -1,20 +1,48 @@
 // src/lib/middleware-helper/csp-handler.ts
+import { withEdgeCache, CACHE_TTL } from "../edge-cache";
 
 /**
  * Parse additional domains from CSP_ALLOWED environment variable
  * and add them with wildcard subdomains to CSP directives
  */
 async function parseAdditionalDomains(env?: any): Promise<string[]> {
-  let additionalDomains = (env?.CSP_ALLOWED || process.env.CSP_ALLOWED)?.trim();
+  let additionalDomains = (env?.CSP_ALLOWED || process.env.CSP_ALLOWED)?.trim() || "";
   try {
-    if (env?.CACHE_CONTROL) {
-      const cached = await env.CACHE_CONTROL.get("security:csp_allowed_domains");
-      if (cached !== null) {
-        additionalDomains = cached;
+    const apiUrl = (env?.PUBLIC_API_BASE_URL || import.meta.env.PUBLIC_API_BASE_URL || "")?.trim();
+    if (apiUrl) {
+      const cachedData = await withEdgeCache(
+        "global_security_settings",
+        async () => {
+          try {
+            const url = `${apiUrl}/api/settings/security`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+            const response = await fetch(url, {
+              headers: { "Accept": "application/json" },
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+              console.error(`[CSP] API error: ${response.status}`);
+              return null;
+            }
+            return await response.json() as { cspAllowedDomains?: string };
+          } catch (error) {
+            console.error("[CSP] Error fetching security settings:", error);
+            return null;
+          }
+        },
+        { ttlSeconds: CACHE_TTL.LONG }
+      );
+
+      if (cachedData?.cspAllowedDomains) {
+        additionalDomains = cachedData.cspAllowedDomains;
       }
     }
   } catch (e) {
-    console.error("Failed to read CSP_ALLOWED from KV Cache", e);
+    console.error("Failed to fetch CSP_ALLOWED via EdgeCache", e);
   }
 
   if (!additionalDomains) {
