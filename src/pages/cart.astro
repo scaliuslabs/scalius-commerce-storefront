@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LocationSelector from "@/components/LocationSelector";
 import ShippingLocationSelector from "@/components/ShippingLocationSelector";
-import CustomerLoginWidget from "@/components/CustomerLoginWidget";
 import { getCities, processOrder } from "@/lib/cart/server";
 import {
   getShippingMethods,
@@ -136,6 +135,7 @@ const submitLabel = codOnly
     id="checkout-meta"
     data-cod-only={codOnly ? "true" : "false"}
     data-gateways={JSON.stringify(checkoutConfig.gateways)}
+    data-guest-checkout-enabled={checkoutConfig.guestCheckoutEnabled !== false ? "true" : "false"}
     hidden
   ></div>
 
@@ -283,9 +283,21 @@ const submitLabel = codOnly
       <!-- Checkout Form Section - Left on Desktop -->
       <div class="lg:w-7/12 order-1 lg:order-2">
 
-        <!-- Optional customer login widget -->
+        <!-- Optional customer login trigger -->
         <div class="mb-3">
-          <CustomerLoginWidget client:idle />
+          <button 
+            type="button"
+            onclick="document.dispatchEvent(new CustomEvent('open-auth-modal'))"
+            class="w-full text-left rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 hover:bg-green-100 transition-colors shadow-sm flex items-center justify-between group"
+          >
+            <span class="flex items-center gap-2">
+              <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span class="font-medium">Sign in for faster checkout & order tracking</span>
+            </span>
+            <span class="text-green-600 font-bold group-hover:translate-x-0.5 transition-transform">→</span>
+          </button>
         </div>
 
         <div
@@ -506,9 +518,10 @@ const submitLabel = codOnly
     }
   });
 
-  // ── Multi-gateway checkout redirect ──────────────────────────────────────
+  // ── Multi-gateway checkout redirect ──
   const meta = document.getElementById("checkout-meta");
   const codOnly = meta?.dataset.codOnly === "true";
+  const guestCheckoutEnabled = meta?.dataset.guestCheckoutEnabled !== "false"; // default true
 
   document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("checkoutForm") as HTMLFormElement;
@@ -519,6 +532,10 @@ const submitLabel = codOnly
     const isCartEmpty = () => {
       const input = document.getElementById("cartItemsInput") as HTMLInputElement;
       return !input?.value || input.value === "{}" || input.value === "[]";
+    };
+
+    const isUserLoggedIn = () => {
+      return document.cookie.split(";").some((c) => c.trim().startsWith("cs_auth=1"));
     };
 
     const updateCheckoutButtonState = () => {
@@ -536,6 +553,13 @@ const submitLabel = codOnly
     if (!form || !submitButton) return;
 
     form.addEventListener("submit", (e) => {
+      // Guest Checkout Interception
+      if (!guestCheckoutEnabled && !isUserLoggedIn()) {
+        e.preventDefault();
+        document.dispatchEvent(new CustomEvent("open-auth-modal"));
+        return;
+      }
+
       // Cart empty check
       if (isCartEmpty()) {
         e.preventDefault();

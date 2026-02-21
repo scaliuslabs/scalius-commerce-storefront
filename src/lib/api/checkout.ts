@@ -13,6 +13,8 @@ export interface GatewayConfig {
 
 export interface CheckoutConfig {
   gateways: GatewayConfig[];
+  guestCheckoutEnabled?: boolean;
+  authVerificationMethod?: "email" | "phone" | "both";
 }
 
 let cachedConfig: CheckoutConfig | null = null;
@@ -37,8 +39,12 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
     return cachedConfig;
   } catch (err) {
     console.error("[checkout] Failed to fetch gateway config:", err);
-    // Fallback: COD only
-    return { gateways: [{ id: "cod", name: "Cash on Delivery", currencies: ["bdt"] }] };
+    // Fallback: COD only, safe defaults
+    return {
+      gateways: [{ id: "cod", name: "Cash on Delivery", currencies: ["bdt"] }],
+      guestCheckoutEnabled: true,
+      authVerificationMethod: "both"
+    };
   }
 }
 

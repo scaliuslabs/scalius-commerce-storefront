@@ -5,9 +5,19 @@
  * Handles request creation, authentication, and resilient fetching.
  */
 
-// --- Configuration ---
+// Resolve the API base URL:
+// 1. In browser: read from window.__API_BASE_URL__ set by Layout.astro's define:vars script
+//    (Cloudflare Worker runtime vars are NOT available to Vite client bundles via import.meta.env)
+// 2. In SSR: read from import.meta.env.PUBLIC_API_URL (available server-side)
+// 3. Fallback: /api/v1 (same-origin proxy for local dev)
+function resolveApiBaseUrl(): string {
+  if (typeof window !== "undefined" && (window as any).__API_BASE_URL__) {
+    return (window as any).__API_BASE_URL__;
+  }
+  return import.meta.env.PUBLIC_API_URL || "/api/v1";
+}
 
-const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "/api/v1";
+const API_BASE_URL = resolveApiBaseUrl();
 
 // --- JWT Token Management ---
 
@@ -47,17 +57,21 @@ async function getJwtToken(): Promise<string | null> {
     try {
       const apiToken = import.meta.env.API_TOKEN;
       if (!apiToken) {
-        throw new Error(
-          "API_TOKEN is not configured in environment variables.",
+        console.error(
+          "[API Client] API_TOKEN is not configured in environment variables.",
         );
+        return null;
       }
 
       const response = await fetch(createApiUrl("/auth/token"), {
         headers: { "X-API-Token": apiToken },
+        signal: AbortSignal.timeout(5000),
       });
 
       if (!response.ok) {
-        console.error("Failed to get JWT token:", await response.text());
+        // Always consume the body to prevent stalled response warnings
+        const errBody = await response.text();
+        console.error("Failed to get JWT token:", errBody);
         return null;
       }
 
@@ -126,6 +140,9 @@ export async function fetchWithRetry(
     }
 
     if (response.status === 401 && requiresAuth && retries > 0) {
+      // CRITICAL: Cancel the response body before retrying to prevent
+      // stalled HTTP response deadlocks on Cloudflare Workers
+      await response.body?.cancel();
       console.warn("Authentication failed, retrying with new token...");
       jwtToken = null;
       tokenExpiry = null;

@@ -24,9 +24,9 @@
     }
   ],
   "vars": {
-    "PUBLIC_API_URL": "https://testdash.abnidaala.workers.dev/api/v1",
-    "PUBLIC_API_BASE_URL": "https://testdash.abnidaala.workers.dev",
-    "STOREFRONT_URL": "https://storefront-test.abnidaala.workers.dev",
-    "CDN_DOMAIN_URL": "cdn.scalius.com"
+    "PUBLIC_API_URL": "https://dash.wrygo.com/api/v1",
+    "PUBLIC_API_BASE_URL": "https://dash.wrygo.com",
+    "STOREFRONT_URL": "https://store.wrygo.com",
+    "CDN_DOMAIN_URL": "cloud.wrygo.com"
   }
 }

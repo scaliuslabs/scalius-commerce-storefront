@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { getLayoutData, type LayoutData } from "@/lib/api";
 import type { AnalyticsConfig } from "@/lib/api";
 import CommandPalette from "@/components/search/CommandPalette";
+import AuthModal from "@/components/AuthModal";
 
 interface Props {
   title: string;
@@ -67,6 +68,11 @@ const bodyEndScripts = analyticsScripts.filter(
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Runtime API URL for client-side JS (Cloudflare Worker env vars aren't available to Vite client bundles) -->
+    <script is:inline define:vars={{ __apiBaseUrl: import.meta.env.PUBLIC_API_URL || "/api/v1" }}>
+      window.__API_BASE_URL__ = __apiBaseUrl;
+    </script>
 
     <!-- Stale Asset Detector -->
     <script is:inline>
@@ -163,6 +169,7 @@ const bodyEndScripts = analyticsScripts.filter(
     <Toaster position="top-right" expand={false} richColors closeButton />
 
     <CommandPalette client:idle />
+    <AuthModal client:idle />
 
     {bodyEndScripts.map((script) => <Fragment set:html={script.config} />)}
   </body>

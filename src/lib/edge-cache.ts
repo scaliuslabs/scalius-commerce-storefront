@@ -229,7 +229,7 @@ export function clearMemoryCache(): void {
 }
 
 export const CACHE_TTL = {
-  LONG: 8640000, // 24h - static data
-  MEDIUM: 8640000, // 1h  - semi-dynamic
-  SHORT: 8640000, // 5m  - dynamic
+  LONG: 86400,   // 24h - static data (layout, categories, etc.)
+  MEDIUM: 3600,  // 1h  - semi-dynamic (product listings)
+  SHORT: 300,    // 5m  - dynamic (CSP settings, checkout config)
 } as const;

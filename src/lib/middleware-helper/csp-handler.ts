@@ -3,8 +3,16 @@ import { withEdgeCache, CACHE_TTL } from "../edge-cache";
 
 /**
  * Parse additional domains from CSP_ALLOWED environment variable
- * and add them with wildcard subdomains to CSP directives
+ * and add them with wildcard subdomains to CSP directives.
+ *
+ * Uses withEdgeCache which handles deduplication via its inflight map,
+ * so no per-request caching is needed here.
  */
+
+// Empty sentinel — returned on fetch failure so withEdgeCache caches it
+// and doesn't re-fetch on every request
+const EMPTY_CSP_DATA = { cspAllowedDomains: "" };
+
 async function parseAdditionalDomains(env?: any): Promise<string[]> {
   let additionalDomains = (env?.CSP_ALLOWED || process.env.CSP_ALLOWED)?.trim() || "";
   try {
@@ -15,26 +23,25 @@ async function parseAdditionalDomains(env?: any): Promise<string[]> {
         async () => {
           try {
             const url = `${apiUrl}/api/settings/security`;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
-
             const response = await fetch(url, {
               headers: { "Accept": "application/json" },
-              signal: controller.signal
+              signal: AbortSignal.timeout(4000),
             });
-            clearTimeout(timeoutId);
 
             if (!response.ok) {
-              console.error(`[CSP] API error: ${response.status}`);
-              return null;
+              // Always cancel the response body to prevent stalled deadlocks
+              await response.body?.cancel();
+              // Return empty sentinel (NOT null) so this gets cached
+              // and we don't re-fetch on every single request
+              return EMPTY_CSP_DATA;
             }
             return await response.json() as { cspAllowedDomains?: string };
-          } catch (error) {
-            console.error("[CSP] Error fetching security settings:", error);
-            return null;
+          } catch {
+            // Return empty sentinel so failure is cached too
+            return EMPTY_CSP_DATA;
           }
         },
-        { ttlSeconds: CACHE_TTL.LONG }
+        { ttlSeconds: CACHE_TTL.SHORT }
       );
 
       if (cachedData?.cspAllowedDomains) {

@@ -184,33 +184,47 @@ const { headerData } = Astro.props;
             )
         }
 
-        <button
-          type="button"
-          id="cart-button"
-          class="group relative flex items-center h-9 lg:h-11 bg-gray-900 text-white hover:bg-black transition-all duration-300 rounded-full pl-3 lg:pl-5 pr-1 lg:pr-1.5 gap-2 lg:gap-3 shadow-md hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] shrink-0"
-          aria-label="Open shopping cart"
-        >
-          <span
-            id="cart-total-display"
-            class="hidden md:block text-[14px] font-bold tracking-tight whitespace-nowrap tabular-nums"
+        <div class="group flex items-center h-9 lg:h-11 bg-gray-900 text-white transition-all duration-300 rounded-full pl-1 pr-1 lg:pr-1.5 shadow-md hover:shadow-xl hover:-translate-y-0.5 shrink-0 relative">
+          <a
+            id="account-link"
+            href="/account"
+            class="hidden items-center justify-center h-7 w-7 lg:h-8 lg:w-8 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors duration-200 ml-1 mr-1 lg:mr-2"
+            aria-label="My Account"
+            title="My Account"
           >
-            ৳0
-          </span>
+            <svg class="h-4 w-4 lg:h-[18px] lg:w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path>
+            </svg>
+          </a>
 
-          <span class="hidden md:block h-5 w-px bg-white/20"></span>
-
-          <div
-            class="relative w-7 h-7 lg:w-8 lg:h-8 shrink-0 flex items-center justify-center bg-white/10 rounded-full"
+          <button
+            type="button"
+            id="cart-button"
+            class="relative flex items-center pl-2 lg:pl-2 gap-2 lg:gap-3 cursor-pointer active:scale-[0.98] outline-none"
+            aria-label="Open shopping cart"
           >
-            <ShoppingCart className="h-3.5 w-3.5 lg:h-4 lg:w-4 stroke-2" />
             <span
-              id="cart-count"
-              class="absolute -top-1 -right-1 flex h-3.5 w-3.5 lg:h-4 lg:w-4 min-w-3.5 lg:min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] lg:text-[10px] font-bold text-white ring-2 ring-gray-900 transition-all duration-300 scale-0 opacity-0 shadow-sm"
+              id="cart-total-display"
+              class="hidden md:block text-[14px] font-bold tracking-tight whitespace-nowrap tabular-nums"
             >
-              0
+              ৳0
             </span>
-          </div>
-        </button>
+
+            <span class="hidden md:block h-5 w-px bg-white/20"></span>
+
+            <div
+              class="relative w-7 h-7 lg:w-8 lg:h-8 shrink-0 flex items-center justify-center bg-white/10 rounded-full hover:bg-white/20 transition-colors"
+            >
+              <ShoppingCart className="h-3.5 w-3.5 lg:h-4 lg:w-4 stroke-2" />
+              <span
+                id="cart-count"
+                class="absolute -top-1 -right-1 flex h-3.5 w-3.5 lg:h-4 lg:w-4 min-w-3.5 lg:min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] lg:text-[10px] font-bold text-white ring-2 ring-gray-900 transition-all duration-300 scale-0 opacity-0 shadow-sm"
+              >
+                0
+              </span>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -313,4 +327,18 @@ const { headerData } = Astro.props;
     initializeScrollObserver();
     updateHeaderHeight();
   });
+
+  // Show account icon if customer is logged in (check for cs_auth cookie)
+  function checkCustomerSession() {
+    const hasCookie = document.cookie.split(";").some((c) => c.trim().startsWith("cs_auth=1"));
+    const accountLink = document.getElementById("account-link");
+    if (accountLink) {
+      accountLink.classList.toggle("hidden", !hasCookie);
+      accountLink.classList.toggle("flex", hasCookie);
+    }
+  }
+  checkCustomerSession();
+  window.addEventListener("customer-login", checkCustomerSession);
+  window.addEventListener("customer-logout", checkCustomerSession);
+  document.addEventListener("astro:page-load", checkCustomerSession);
 </script>

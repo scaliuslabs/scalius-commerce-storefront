@@ -50,6 +50,28 @@ export default function OrderSuccessButtons() {
           </svg>
           Continue Shopping
         </Button>
+        {typeof document !== "undefined" && document.cookie.includes("cs_tok=") && (
+          <Button
+            variant="outline"
+            className="border-2 border-green-600 text-green-700 font-medium py-3 px-6 rounded-xl hover:bg-green-50 transition-all duration-200 flex-1"
+            onClick={() => { window.location.href = "/account"; }}
+          >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            View Your Orders
+          </Button>
+        )}
         <Button
           className="bg-black text-white font-medium py-3 px-6 rounded-xl hover:bg-gray-800 transition-all duration-200 flex-1"
           onClick={handlePrintOrder}
