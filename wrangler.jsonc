@@ -27,7 +27,6 @@
     "PUBLIC_API_URL": "https://testdash.abnidaala.workers.dev/api/v1",
     "PUBLIC_API_BASE_URL": "https://testdash.abnidaala.workers.dev",
     "STOREFRONT_URL": "https://storefront-test.abnidaala.workers.dev",
-    "CDN_DOMAIN_URL": "cdn.scalius.com",
-    "CSP_ALLOWED": "testdash.abnidaala.workers.dev,cdn.jsdelivr.net,store.scalius.com,admin.scalius.com,scalius.com,connect.facebook.net,facebook.com,firebaseinstallations.googleapis.com,www.gstatic.com,leaflitepdfeditor.site"
+    "CDN_DOMAIN_URL": "cdn.scalius.com"
   }
 }
