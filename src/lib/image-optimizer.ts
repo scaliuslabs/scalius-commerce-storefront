@@ -10,6 +10,8 @@
  * NOTE: Bypasses optimization on localhost since /cdn-cgi/ only works on Cloudflare.
  */
 
+import { resolveMediaUrl } from "./media-url";
+
 /**
  * Check if we're running on localhost/development
  * The /cdn-cgi/image/ path only works on Cloudflare's edge network
@@ -37,7 +39,7 @@ const DEFAULT_PRODUCT_OPTIONS: ImageOptimizationOptions = {
   width: 400,
   height: 400,
   quality: 75,
-  format: "webp",
+  format: "auto",
   fit: "cover",
   onerror: "redirect",
 };
@@ -45,34 +47,25 @@ const DEFAULT_PRODUCT_OPTIONS: ImageOptimizationOptions = {
 /**
  * Generates Cloudflare Image Resizing URL
  *
- * @param imageUrl - The original CDN image URL
+ * @param imageUrl - The original CDN image URL or bare R2 key
  * @param options - Image transformation options
  * @returns Cloudflare-optimized image URL path
- *
- * @example
- * ```ts
- * // Basic usage
- * getOptimizedImageUrl('https://cdn.example.com/image.jpg')
- * // Returns: /cdn-cgi/image/width=400,height=400,quality=75,format=webp,fit=cover,onerror=redirect/https://cdn.example.com/image.jpg
- *
- * // Custom options
- * getOptimizedImageUrl('https://cdn.example.com/image.jpg', { width: 800, quality: 90 })
- * // Returns: /cdn-cgi/image/width=800,height=400,quality=90,format=webp,fit=cover,onerror=redirect/https://cdn.example.com/image.jpg
- * ```
  */
 export function getOptimizedImageUrl(
   imageUrl: string | null | undefined,
   options: ImageOptimizationOptions = {},
 ): string {
+  // Resolve bare keys to full CDN URLs
+  const resolved = resolveMediaUrl(imageUrl);
+
   // Handle null/undefined/empty URLs
-  if (!imageUrl || imageUrl.trim() === "") {
+  if (!resolved) {
     return "/img/no-image.webp";
   }
 
   // Bypass Cloudflare optimization on localhost (returns 404)
-  // The /cdn-cgi/image/ path only works on Cloudflare's edge network
   if (isLocalhost) {
-    return imageUrl;
+    return resolved;
   }
 
   // Merge with defaults
@@ -95,7 +88,7 @@ export function getOptimizedImageUrl(
 
   // Return Cloudflare Image Resizing URL
   // Format: /cdn-cgi/image/{options}/{imageUrl}
-  return `/cdn-cgi/image/${optionsString}/${imageUrl}`;
+  return `/cdn-cgi/image/${optionsString}/${resolved}`;
 }
 
 /**
@@ -105,12 +98,6 @@ export function getOptimizedImageUrl(
  * @param widths - Array of widths for srcset (defaults to [320, 640, 768, 1024, 1280])
  * @param options - Base image transformation options
  * @returns srcset string
- *
- * @example
- * ```ts
- * getResponsiveSrcSet('https://cdn.example.com/image.jpg')
- * // Returns: "/cdn-cgi/image/width=320.../image.jpg 320w, /cdn-cgi/image/width=640.../image.jpg 640w, ..."
- * ```
  */
 export function getResponsiveSrcSet(
   imageUrl: string | null | undefined,
