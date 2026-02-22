@@ -88,16 +88,20 @@ export async function getCustomerSession(): Promise<AuthState> {
 
 /**
  * Log out the current customer.
+ * Uses a same-origin proxy (/api/auth/logout) to guarantee the browser
+ * processes the Set-Cookie headers that clear the HttpOnly cs_tok cookie.
+ * Cross-origin Set-Cookie from dash.wrygo.com → store.wrygo.com is
+ * silently dropped by modern browsers.
  */
 export async function logoutCustomer(): Promise<void> {
   try {
-    await fetch(createApiUrl(`${BASE}/logout`), {
+    await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
       cache: "no-store",
     });
   } catch {
-    // Ignore errors
+    // Ignore errors — client-side cs_auth clear is a fallback
   }
 }
 
