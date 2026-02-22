@@ -125,6 +125,12 @@ export async function fetchWithRetry(
       }
     }
 
+    // If authentication is required, we MUST NOT cache this request at the fetch level
+    // to prevent Cloudflare from serving a cached authenticated response to a different user or session.
+    if (requiresAuth && !options.cache) {
+      options.cache = "no-store";
+    }
+
     // Use AbortSignal.timeout() per CF best practices - cleaner than manual AbortController
     const response = await fetch(url, {
       ...options,

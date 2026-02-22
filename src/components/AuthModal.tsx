@@ -4,22 +4,33 @@
 
 import { useState, useEffect, useRef } from "react";
 import { User, Mail, Smartphone, X } from "lucide-react";
-import { sendCustomerOtp, verifyCustomerOtp, getCustomerSession, logoutCustomer, type CustomerInfo } from "@/lib/api/customer-auth";
+import { sendCustomerOtp, verifyCustomerOtp, getCustomerSession, logoutCustomer, updateCustomerProfile, type CustomerInfo } from "@/lib/api/customer-auth";
+import { getCheckoutConfig } from "@/lib/api/checkout";
+import { createApiUrl } from "@/lib/api/client";
 
 type VerificationMethod = "email" | "phone";
-type Step = "method_select" | "input" | "otp" | "authenticated";
+type Step = "method_select" | "input" | "otp" | "profile_setup" | "authenticated";
 
 export default function AuthModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>("input");
   const [method, setMethod] = useState<VerificationMethod>("email");
   const [identifier, setIdentifier] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
   const [otp, setOtp] = useState("");
 
-  // Settings injected globally, default assumes email
-  const [allowedMethods, setAllowedMethods] = useState<"email" | "phone" | "both">("email");
+  // Settings injected globally
+  const [allowedMethods, setAllowedMethods] = useState<"email" | "phone" | "both">("both");
 
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
+
+  // Profile Setup State
+  const [profileName, setProfileName] = useState("");
+  const [profileAddress, setProfileAddress] = useState("");
+  const [profileCity, setProfileCity] = useState("");
+  const [profileZone, setProfileZone] = useState("");
+  const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+  const [zones, setZones] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
@@ -28,9 +39,14 @@ export default function AuthModal() {
 
   // Check session and settings on mount
   useEffect(() => {
-    // Note: In a real app we might fetch global store settings here 
-    // to restrict allowedMethods to phone/email based on Admin config.
-    setAllowedMethods("both"); // Defaulting to both for the UI flexiblity
+    getCheckoutConfig().then((config) => {
+      if (config.authVerificationMethod) {
+        setAllowedMethods(config.authVerificationMethod);
+        if (config.authVerificationMethod !== "both") {
+          setMethod(config.authVerificationMethod);
+        }
+      }
+    });
 
     getCustomerSession().then((state) => {
       if (state.authenticated && state.customer) {
@@ -44,6 +60,35 @@ export default function AuthModal() {
     window.addEventListener("open-auth-modal", handleOpen);
     return () => window.removeEventListener("open-auth-modal", handleOpen);
   }, []);
+
+  // Fetch cities when profile setup begins
+  useEffect(() => {
+    if (step === "profile_setup") {
+      fetch(createApiUrl("/locations/cities"))
+        .then((res) => res.json())
+        .then((data: any) => {
+          if (data.success) setCities(data.data);
+        })
+        .catch(console.error);
+    }
+  }, [step]);
+
+  // Fetch zones when city changes
+  useEffect(() => {
+    if (profileCity && step === "profile_setup") {
+      fetch(createApiUrl(`/locations/zones?cityId=${profileCity}`))
+        .then((res) => res.json())
+        .then((data: any) => {
+          if (data.success) {
+            setZones(data.data);
+            setProfileZone("");
+          }
+        })
+        .catch(console.error);
+    } else {
+      setZones([]);
+    }
+  }, [profileCity, step]);
 
   const dispatchLoginEvent = (customerData: CustomerInfo) => {
     window.dispatchEvent(new CustomEvent("customer-login", {
@@ -69,7 +114,9 @@ export default function AuthModal() {
 
   const validateIdentifier = () => {
     if (method === "email") {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
+      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
+      const phoneValid = /^\+?[0-9]{10,15}$/.test(phoneInput.trim());
+      return emailValid && phoneValid;
     } else {
       // Basic phone validation (allowing digits and + sign)
       return /^\+?[0-9]{10,15}$/.test(identifier.trim());
@@ -78,7 +125,11 @@ export default function AuthModal() {
 
   const handleSendOtp = async () => {
     if (!validateIdentifier()) {
-      setError(`Please enter a valid ${method === "email" ? "email address" : "phone number"}`);
+      if (method === "email") {
+        setError("Please enter a valid email address and phone number");
+      } else {
+        setError("Please enter a valid phone number");
+      }
       return;
     }
     setLoading(true);
@@ -103,15 +154,21 @@ export default function AuthModal() {
     }
     setLoading(true);
     setError("");
-    const res = await verifyCustomerOtp(method, identifier.trim(), otp.trim());
+    const res = await verifyCustomerOtp(method, identifier.trim(), otp.trim(), "", method === "email" ? phoneInput.trim() : "");
     setLoading(false);
 
     if (res.success && res.customer) {
       setCustomer(res.customer);
-      setStep("authenticated");
-      dispatchLoginEvent(res.customer);
-      // Automatically close modal after 1.5s on success
-      setTimeout(() => setIsOpen(false), 1500);
+
+      if (res.isNewUser) {
+        // If it's a new user, force them through the profile setup flow
+        setStep("profile_setup");
+      } else {
+        setStep("authenticated");
+        dispatchLoginEvent(res.customer);
+        // Automatically close modal after 1.5s on success
+        setTimeout(() => setIsOpen(false), 1500);
+      }
     } else {
       setError(res.error || "Invalid code");
       if (res.attemptsLeft !== undefined && res.attemptsLeft <= 2) {
@@ -120,11 +177,51 @@ export default function AuthModal() {
     }
   };
 
+  const handleProfileSubmit = async () => {
+    if (!profileName.trim() || !profileCity.trim() || !profileZone.trim()) {
+      setError("Please fill in your Name, City, and Zone");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    const selectedCity = cities.find((c) => c.id === profileCity);
+    const selectedZone = zones.find((z) => z.id === profileZone);
+
+    const res = await updateCustomerProfile({
+      name: profileName.trim(),
+      address: profileAddress.trim(),
+      city: profileCity,
+      zone: profileZone,
+      cityName: selectedCity?.name || "",
+      zoneName: selectedZone?.name || "",
+    });
+    setLoading(false);
+
+    if (res.success) {
+      // Update local state with the new info so events are correct
+      const updatedCustomer = {
+        ...customer!,
+        name: profileName.trim(),
+        address: profileAddress.trim(),
+        cityName: selectedCity?.name || "",
+        zoneName: selectedZone?.name || "",
+      };
+      setCustomer(updatedCustomer);
+      setStep("authenticated");
+      dispatchLoginEvent(updatedCustomer);
+      setTimeout(() => setIsOpen(false), 1500);
+    } else {
+      setError(res.error || "Failed to save profile");
+    }
+  };
+
   const handleLogout = async () => {
     await logoutCustomer();
     setCustomer(null);
     setStep("input");
     setIdentifier("");
+    setPhoneInput("");
     setOtp("");
     window.dispatchEvent(new CustomEvent("customer-logout"));
   };
@@ -189,13 +286,13 @@ export default function AuthModal() {
               <div className="flex rounded-lg border border-gray-200 p-1 mb-4 bg-gray-50">
                 <button
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "email" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                  onClick={() => { setMethod("email"); setError(""); setIdentifier(""); }}
+                  onClick={() => { setMethod("email"); setError(""); setIdentifier(""); setPhoneInput(""); }}
                 >
                   <Mail className="h-4 w-4" /> Email
                 </button>
                 <button
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "phone" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                  onClick={() => { setMethod("phone"); setError(""); setIdentifier(""); }}
+                  onClick={() => { setMethod("phone"); setError(""); setIdentifier(""); setPhoneInput(""); }}
                 >
                   <Smartphone className="h-4 w-4" /> WhatsApp
                 </button>
@@ -216,6 +313,34 @@ export default function AuthModal() {
                 autoFocus
               />
             </div>
+
+            {method === "email" && (
+              <div className="space-y-1.5 mt-2">
+                <label className="text-sm font-medium text-gray-700">Phone Number (Required)</label>
+                <input
+                  type="tel"
+                  value={phoneInput}
+                  onChange={(e) => { setPhoneInput(e.target.value); setError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+                  placeholder="+8801700000000"
+                  className="w-full h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-all"
+                />
+              </div>
+            )}
+
+            {method === "phone" && (
+              <div className="space-y-1.5 mt-2">
+                <label className="text-sm font-medium text-gray-700">Email Address (Optional)</label>
+                <input
+                  type="email"
+                  value={phoneInput} // Reusing phoneInput state object variable contextually for optional email to save lines
+                  onChange={(e) => { setPhoneInput(e.target.value); setError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+                  placeholder="you@example.com"
+                  className="w-full h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-all"
+                />
+              </div>
+            )}
 
             {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
 
@@ -286,6 +411,83 @@ export default function AuthModal() {
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {/* State: Profile Setup (New Users) */}
+        {step === "profile_setup" && (
+          <div className="space-y-4">
+            <div className="text-center space-y-2 mb-2">
+              <div className="mx-auto w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
+                <User className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Complete your profile</h3>
+              <p className="text-sm text-gray-600">Please provide your delivery details.</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700">Full Name</label>
+                <input
+                  type="text"
+                  value={profileName}
+                  onChange={(e) => { setProfileName(e.target.value); setError(""); }}
+                  placeholder="John Doe"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700">Full Address</label>
+                <input
+                  type="text"
+                  value={profileAddress}
+                  onChange={(e) => { setProfileAddress(e.target.value); setError(""); }}
+                  placeholder="Apt, Street, Building"
+                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700">City</label>
+                  <select
+                    value={profileCity}
+                    onChange={(e) => { setProfileCity(e.target.value); setError(""); }}
+                    className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all"
+                  >
+                    <option value="" disabled>Select City</option>
+                    {cities.map((city) => (
+                      <option key={city.id} value={city.id}>{city.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700">Zone</label>
+                  <select
+                    value={profileZone}
+                    onChange={(e) => { setProfileZone(e.target.value); setError(""); }}
+                    disabled={!profileCity || zones.length === 0}
+                    className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all disabled:opacity-50 disabled:bg-gray-50"
+                  >
+                    <option value="" disabled>Select Zone</option>
+                    {zones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>{zone.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {error && <p className="text-xs text-center text-red-500 font-medium pt-1">{error}</p>}
+
+            <button
+              onClick={handleProfileSubmit}
+              disabled={loading || !profileName.trim() || !profileCity.trim() || !profileZone.trim()}
+              className="w-full h-11 rounded-lg bg-gray-900 text-white text-sm font-medium disabled:opacity-50 hover:bg-gray-800 transition-colors mt-2"
+            >
+              {loading ? "Saving..." : "Save Delivery Details"}
+            </button>
           </div>
         )}
       </div>

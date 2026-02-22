@@ -188,7 +188,7 @@ const { headerData } = Astro.props;
           <a
             id="account-link"
             href="/account"
-            class="hidden items-center justify-center h-7 w-7 lg:h-8 lg:w-8 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors duration-200 ml-1 mr-1 lg:mr-2"
+            class="flex items-center justify-center h-7 w-7 lg:h-8 lg:w-8 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors duration-200 ml-1 mr-1 lg:mr-2"
             aria-label="My Account"
             title="My Account"
           >
@@ -328,13 +328,17 @@ const { headerData } = Astro.props;
     updateHeaderHeight();
   });
 
-  // Show account icon if customer is logged in (check for cs_auth cookie)
+  // Handle account icon click (check for cs_auth cookie)
   function checkCustomerSession() {
     const hasCookie = document.cookie.split(";").some((c) => c.trim().startsWith("cs_auth=1"));
     const accountLink = document.getElementById("account-link");
     if (accountLink) {
-      accountLink.classList.toggle("hidden", !hasCookie);
-      accountLink.classList.toggle("flex", hasCookie);
+      accountLink.onclick = (e) => {
+        if (!hasCookie) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent("open-auth-modal"));
+        }
+      };
     }
   }
   checkCustomerSession();

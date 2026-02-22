@@ -53,17 +53,18 @@ export async function verifyCustomerOtp(
   identifier: string,
   code: string,
   name?: string,
-): Promise<{ success: boolean; customer?: CustomerInfo; error?: string; attemptsLeft?: number }> {
+  phone?: string,
+): Promise<{ success: boolean; customer?: CustomerInfo; error?: string; attemptsLeft?: number; isNewUser?: boolean; }> {
   try {
     const res = await fetch(createApiUrl(`${BASE}/verify-otp`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ method, identifier, code, name }),
+      body: JSON.stringify({ method, identifier, code, name, phone }),
     });
     const data = await res.json() as any;
     if (!res.ok) return { success: false, error: data.error, attemptsLeft: data.attemptsLeft };
-    return { success: true, customer: data.customer };
+    return { success: true, customer: data.customer, isNewUser: data.isNewUser };
   } catch {
     return { success: false, error: "Network error. Please try again." };
   }
@@ -76,6 +77,7 @@ export async function getCustomerSession(): Promise<AuthState> {
   try {
     const res = await fetch(createApiUrl(`${BASE}/me`), {
       credentials: "include",
+      cache: "no-store",
     });
     if (!res.ok) return { authenticated: false };
     return await res.json() as AuthState;
@@ -92,6 +94,7 @@ export async function logoutCustomer(): Promise<void> {
     await fetch(createApiUrl(`${BASE}/logout`), {
       method: "POST",
       credentials: "include",
+      cache: "no-store",
     });
   } catch {
     // Ignore errors
@@ -131,6 +134,8 @@ export interface CustomerOrder {
 export interface ProfileUpdateData {
   name?: string;
   address?: string;
+  city?: string;
+  zone?: string;
   cityName?: string;
   zoneName?: string;
 }

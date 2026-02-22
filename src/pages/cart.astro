@@ -287,7 +287,7 @@ const submitLabel = codOnly
         <div class="mb-3">
           <button 
             type="button"
-            onclick="document.dispatchEvent(new CustomEvent('open-auth-modal'))"
+            onclick="window.dispatchEvent(new CustomEvent('open-auth-modal'))"
             class="w-full text-left rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 hover:bg-green-100 transition-colors shadow-sm flex items-center justify-between group"
           >
             <span class="flex items-center gap-2">
@@ -490,32 +490,105 @@ const submitLabel = codOnly
 
 <script>
   import { initCartFunctionality } from "@/lib/cart/client";
+  import { getCustomerSession } from "@/lib/api/customer-auth";
+  import { getCities, getZones } from "@/lib/api/shipping";
 
   // Initialize cart functionality
   initCartFunctionality();
 
   // ── Customer login pre-fill ───────────────────────────────────────────────
-  // Listens for the custom "customer-login" event dispatched by CustomerLoginWidget.
-  // Pre-fills the checkout form with the customer's known data.
-  window.addEventListener("customer-login", (e: any) => {
-    const customer = e.detail;
+  
+  // Helper to normalize phone numbers
+  const normalizePhone = (phone: string | undefined | null) => {
+    if (!phone) return "";
+    let p = phone.replace(/^\+?880/, "");
+    if (p.startsWith("1")) p = "0" + p;
+    return p;
+  };
+
+  // Helper to fill basic fields
+  const fillBasicCustomerFields = (customer: any) => {
     if (customer?.name) {
       const el = document.getElementById("customerName") as HTMLInputElement;
       if (el && !el.value) el.value = customer.name;
     }
     if (customer?.phone) {
       const el = document.getElementById("customerPhone") as HTMLInputElement;
-      if (el && !el.value) {
-        // Normalize to BD format
-        let phone = customer.phone.replace(/^\+?880/, "");
-        if (phone.startsWith("1")) phone = "0" + phone;
-        el.value = phone;
-      }
+      if (el && !el.value) el.value = normalizePhone(customer.phone);
     }
     if (customer?.email) {
       const el = document.getElementById("customerEmail") as HTMLInputElement;
       if (el && !el.value) el.value = customer.email;
     }
+    if (customer?.address) {
+      const el = document.getElementById("shippingAddress") as HTMLTextAreaElement;
+      if (el && !el.value) el.value = customer.address;
+    }
+  };
+
+  // Helper to auto-select City/Zone dropdowns
+  const fillLocationDropdowns = async (customer: any) => {
+    try {
+      if (!customer?.cityName && !customer?.city) return;
+
+      const citySelect = document.querySelector('select[name="city"]') as unknown as HTMLSelectElement;
+      const zoneSelect = document.querySelector('select[name="zone"]') as unknown as HTMLSelectElement;
+      if (!citySelect || !zoneSelect) return;
+
+      // Ensure cities are loaded (they should be rendered by LocationSelector visually, but we need the internal options mapping)
+      // Since LocationSelector is a React component, we have to interact with its rendered raw HTML elements
+      
+      const cityId = customer.city || customer.cityName; // Either ID or Name fallback
+      let foundCity = false;
+
+      // 1. Find the city option
+      for (let i = 0; i < citySelect.options.length; i++) {
+        if (citySelect.options[i].text === customer.cityName || citySelect.options[i].value === cityId) {
+          citySelect.selectedIndex = i;
+          foundCity = true;
+          break;
+        }
+      }
+
+      if (foundCity) {
+        // Dispatch 'change' so LocationSelector triggers its internal Zone fetch
+        citySelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+        // Wait a beat for the React component to fetch the Zones
+        setTimeout(() => {
+          const expectedZone = customer.zoneName || customer.zone;
+          for (let i = 0; i < zoneSelect.options.length; i++) {
+            if (zoneSelect.options[i].text === expectedZone || zoneSelect.options[i].value === expectedZone) {
+              zoneSelect.selectedIndex = i;
+              zoneSelect.dispatchEvent(new Event("change", { bubbles: true }));
+              break;
+            }
+          }
+        }, 800);
+      }
+    } catch(err) {
+      console.error("Cart autofill location err:", err);
+    }
+  };
+
+  // 1. Initial page load hydration (standalone fetch)
+  document.addEventListener("DOMContentLoaded", async () => {
+    const isUserLoggedIn = document.cookie.split(";").some((c) => c.trim().startsWith("cs_auth=1"));
+    if (isUserLoggedIn) {
+      const session = await getCustomerSession();
+      if (session?.authenticated && session.customer) {
+        fillBasicCustomerFields(session.customer);
+        await fillLocationDropdowns(session.customer);
+      }
+    }
+  });
+
+  // 2. Active login intercept (AuthModal)
+  window.addEventListener("customer-login", (e: any) => {
+    const customer = e.detail;
+    fillBasicCustomerFields(customer);
+    // Modal normally resolves quickly, but schedule location fill slightly later to avoid DOM races
+    setTimeout(() => fillLocationDropdowns(customer), 300);
   });
 
   // ── Multi-gateway checkout redirect ──
@@ -556,7 +629,7 @@ const submitLabel = codOnly
       // Guest Checkout Interception
       if (!guestCheckoutEnabled && !isUserLoggedIn()) {
         e.preventDefault();
-        document.dispatchEvent(new CustomEvent("open-auth-modal"));
+        window.dispatchEvent(new CustomEvent("open-auth-modal"));
         return;
       }
 

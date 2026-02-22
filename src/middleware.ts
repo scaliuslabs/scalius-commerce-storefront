@@ -19,8 +19,7 @@ const CACHEABLE_PATHS = [
   /^\/search\/?$/,
   /^\/sitemap\.xml$/,
   /^\/sitemap-.*\.xml$/,
-  /^\/sitemap\.xsl$/,
-  /^\/(?!api|cart|buy|order-success|health|robots\.txt)[^/.]*$/,
+  /^\/(?!api|cart|buy|order-success|account|health|robots\.txt)[^/.]*$/,
 ];
 
 /**

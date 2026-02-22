@@ -29,12 +29,12 @@ const layoutData = await getLayoutData();
         </div>
         <h1 class="text-2xl font-bold mb-2">Sign in to view your account</h1>
         <p class="text-gray-500 mb-6">View your orders, manage your profile, and more.</p>
-        <a href="/cart" class="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors">
-          Go to Checkout & Sign In
+        <button type="button" onclick="window.dispatchEvent(new CustomEvent('open-auth-modal'))" class="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-colors shadow-sm">
+          Sign In or Create Account
           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
           </svg>
-        </a>
+        </button>
       </div>
     </div>
 
@@ -424,8 +424,15 @@ const layoutData = await getLayoutData();
 
     // Logout handler
     document.getElementById("logoutBtn")!.addEventListener("click", async () => {
+      // Forcefully drop the frontend cookie locally immediately to break the rendering loop
+      document.cookie = "cs_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       await logoutCustomer();
       window.location.href = "/";
+    });
+
+    // Login handler (from modal)
+    window.addEventListener("customer-login", () => {
+      window.location.reload();
     });
   });
 
