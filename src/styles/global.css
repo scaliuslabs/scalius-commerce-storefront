@@ -124,6 +124,49 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Rich content table fixes — ensure side-by-side layouts work in prose */
+.prose table {
+  table-layout: fixed;
+}
+
+.prose td,
+.prose th {
+  vertical-align: top;
+}
+
+/* Images inside table cells: remove prose's default 2em margins */
+.prose td img,
+.prose th img {
+  margin-top: 0;
+  margin-bottom: 0;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent excessive spacing inside table cells */
+.prose td > *:first-child,
+.prose th > *:first-child {
+  margin-top: 0;
+}
+
+.prose td > *:last-child,
+.prose th > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Image alignment from editor inline styles */
+.prose img[style*="margin-left: auto"][style*="margin-right: auto"] {
+  display: block;
+}
+
+.prose img[style*="margin-left: auto"]:not([style*="margin-right: auto"]) {
+  display: block;
+}
+
+.prose img[style*="margin-right: auto"]:not([style*="margin-left: auto"]) {
+  display: block;
+}
+
 /* 7. Global utility classes. */
 .widget-container {
   width: 100%;
