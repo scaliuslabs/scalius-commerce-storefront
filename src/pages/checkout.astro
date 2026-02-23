@@ -206,13 +206,12 @@ function selectMethod(methodId, gw) {
   if (methodId === "stripe") {
     stripeSection?.classList.remove("hidden");
     initStripe(gw.publishableKey);
-    setPayButton("Pay with Card");
+    setPayButton("Pay with Card", false);
   } else {
     stripeSection?.classList.add("hidden");
-    if (methodId === "cod") setPayButton("Place Order — Pay on Delivery");
-    else if (methodId === "sslcommerz") setPayButton("Continue to Payment →");
+    if (methodId === "cod") setPayButton("Place Order — Pay on Delivery", false);
+    else if (methodId === "sslcommerz") setPayButton("Continue to Payment →", false);
   }
-  setPayButton(null, false); // enable
 }
 
 // ── Stripe ───────────────────────────────────────────────────────────────────

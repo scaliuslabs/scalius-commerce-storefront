@@ -1,7 +1,8 @@
 // src/lib/api/checkout.ts
 // Fetches checkout configuration from the backend (enabled payment gateways).
 
-import { createApiUrl } from "./client";
+import { createApiUrl, fetchWithRetry } from "./client";
+import { withEdgeCache, CACHE_TTL } from "@/lib/edge-cache";
 
 export interface GatewayConfig {
   id: "stripe" | "sslcommerz" | "cod";
@@ -17,35 +18,39 @@ export interface CheckoutConfig {
   authVerificationMethod?: "email" | "phone" | "both";
 }
 
-let cachedConfig: CheckoutConfig | null = null;
-let cachedAt = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const COD_FALLBACK: CheckoutConfig = {
+  gateways: [{ id: "cod", name: "Cash on Delivery", currencies: ["bdt"] }],
+  guestCheckoutEnabled: true,
+  authVerificationMethod: "both",
+};
 
 /**
  * Get active payment gateway configuration from backend.
- * Cached in memory for 5 minutes.
+ * Uses the shared edge cache (L1 + L2) so it is properly invalidated
+ * when /api/purge-cache bumps the KV version.
  */
 export async function getCheckoutConfig(): Promise<CheckoutConfig> {
-  const now = Date.now();
-  if (cachedConfig && now - cachedAt < CACHE_TTL_MS) return cachedConfig;
-
-  try {
-    const res = await fetch(createApiUrl("/checkout/config"), {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    cachedConfig = await res.json() as CheckoutConfig;
-    cachedAt = now;
-    return cachedConfig;
-  } catch (err) {
-    console.error("[checkout] Failed to fetch gateway config:", err);
-    // Fallback: COD only, safe defaults
-    return {
-      gateways: [{ id: "cod", name: "Cash on Delivery", currencies: ["bdt"] }],
-      guestCheckoutEnabled: true,
-      authVerificationMethod: "both"
-    };
-  }
+  const result = await withEdgeCache<CheckoutConfig>(
+    "checkout_config",
+    async () => {
+      try {
+        const res = await fetchWithRetry(
+          createApiUrl("/checkout/config"),
+          {},
+          3,
+          5000,
+          false,
+        );
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        return (await res.json()) as CheckoutConfig;
+      } catch (err) {
+        console.error("[checkout] Failed to fetch gateway config:", err);
+        return null;
+      }
+    },
+    { ttlSeconds: CACHE_TTL.SHORT },
+  );
+  return result ?? COD_FALLBACK;
 }
 
 /**

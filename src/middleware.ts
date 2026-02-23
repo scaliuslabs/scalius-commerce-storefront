@@ -19,7 +19,7 @@ const CACHEABLE_PATHS = [
   /^\/search\/?$/,
   /^\/sitemap\.xml$/,
   /^\/sitemap-.*\.xml$/,
-  /^\/(?!api|cart|buy|order-success|account|health|robots\.txt)[^/.]*$/,
+  /^\/(?!api|cart|checkout|buy|order-success|account|health|robots\.txt)[^/.]*$/,
 ];
 
 /**
@@ -201,7 +201,20 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
 
   // Development or non-cacheable request
   const response = await next();
-  if (isCloudflareEnv) {
+
+  // Pages that must NEVER be cached (contain user-specific or payment-sensitive data)
+  const isNoCachePage = /^\/(cart|checkout)\/?$/.test(url.pathname);
+
+  if (isNoCachePage) {
+    // Force no-store unconditionally — override any existing Cache-Control
+    response.headers.set(
+      "Cache-Control",
+      "private, no-cache, no-store, must-revalidate",
+    );
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
+    response.headers.set("X-Cache-Status", "NO_CACHE");
+  } else if (isCloudflareEnv) {
     response.headers.set("X-Cache-Status", "BYPASS");
     if (!response.headers.has("Cache-Control")) {
       response.headers.set(
