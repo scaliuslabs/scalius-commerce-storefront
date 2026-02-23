@@ -168,8 +168,14 @@ export async function withEdgeCache<T>(
 ): Promise<T | null> {
   const ttlSeconds = options.ttlSeconds ?? DEFAULT_TTL_SECONDS;
 
+  // Include KV version in L1 key so a version bump (from cache purge)
+  // automatically misses L1 on ALL isolates — not just the one that
+  // handled the purge request. This eliminates the cross-isolate
+  // staleness window that existed when L1 used unversioned keys.
+  const l1Key = `${key}:v${cacheContext.kvVersion}`;
+
   // 1. Check L1 Cache (in-memory) - fastest
-  const l1Cached = smartCache.get<T>(key);
+  const l1Cached = smartCache.get<T>(l1Key);
   if (l1Cached !== null) {
     return l1Cached;
   }
@@ -187,7 +193,7 @@ export async function withEdgeCache<T>(
       const l2Cached = await getFromL2<T>(key);
       if (l2Cached !== null) {
         // Populate L1 from L2 for faster subsequent requests
-        smartCache.set(key, l2Cached, ttlSeconds);
+        smartCache.set(l1Key, l2Cached, ttlSeconds);
         return l2Cached;
       }
 
@@ -196,7 +202,7 @@ export async function withEdgeCache<T>(
 
       if (data !== null) {
         // Store in L1 (fast access for this request lifecycle)
-        smartCache.set(key, data, ttlSeconds);
+        smartCache.set(l1Key, data, ttlSeconds);
 
         // Store in L2 (survives cold starts)
         storeInL2(key, data, ttlSeconds);
