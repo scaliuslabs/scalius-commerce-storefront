@@ -55,6 +55,8 @@ const colorOptions = Array.from(colorOrderMap.entries())
 
 const pageTitle = product.metaTitle || product.name;
 const pageDescription = cleanMetaDescription;
+const currencySymbol = layoutData?.currency?.symbol ?? "৳";
+const currencyCode = layoutData?.currency?.code ?? "BDT";
 ---
 
 <Layout title={pageTitle} description={pageDescription} layoutData={layoutData}>
@@ -96,11 +98,12 @@ const pageDescription = cleanMetaDescription;
           sizeOptions={sizeOptions}
           colorOptions={colorOptions}
           isVariantSpecificImagesEnabled={isVariantSpecificImagesEnabled}
+          currencySymbol={currencySymbol}
         />
       </div>
     </section>
 
-    <RelatedProducts relatedProducts={relatedProducts} />
+    <RelatedProducts relatedProducts={relatedProducts} currencySymbol={currencySymbol} />
   </main>
 </Layout>
 
@@ -134,7 +137,7 @@ const pageDescription = cleanMetaDescription;
             content_name: product.name,
             content_category: category?.name,
             content_type: "product",
-            currency: "BDT",
+            currency: (window as any).__CURRENCY_CODE__ || "BDT",
             value: product.discountedPrice,
             contents: variants.map((v: ProductVariant) => ({
               id: v.id && v.id !== "default" ? v.id : product.id,

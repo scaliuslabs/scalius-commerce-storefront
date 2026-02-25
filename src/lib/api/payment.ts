@@ -49,6 +49,7 @@ export async function initSSLCommerzPayment(
   successUrl: string,
   failUrl: string,
   cancelUrl: string,
+  currency = "BDT",
 ): Promise<SSLCommerzSessionResult> {
   const res = await fetchWithRetry(createApiUrl("/payment/sslcommerz/session"), {
     method: "POST",
@@ -56,7 +57,7 @@ export async function initSSLCommerzPayment(
     body: JSON.stringify({
       orderId,
       amount,
-      currency: "BDT",
+      currency,
       customerName,
       customerEmail,
       customerPhone,

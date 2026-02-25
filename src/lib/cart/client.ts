@@ -153,11 +153,14 @@ function processQuickBuy() {
         // 1. Add item to cart store
         addToCart(data.cartItem);
 
-        // 2. Fire analytics events
+        // 2. Fire analytics events (override currency with dynamic value)
+        const dynamicCurrency = (window as any).__CURRENCY_CODE__ || "BDT";
         if (data.addToCartEvent) {
+          data.addToCartEvent.currency = dynamicCurrency;
           trackFbAddToCart(data.addToCartEvent);
         }
         if (data.initiateCheckoutEvent) {
+          data.initiateCheckoutEvent.currency = dynamicCurrency;
           trackFbInitiateCheckout(data.initiateCheckoutEvent);
         }
       }
@@ -220,7 +223,8 @@ function updateDiscountUI() {
     removeButton.style.display = "block";
 
     discountRowEl.style.display = "flex";
-    discountAmountEl.textContent = `-৳${(discount.discountAmount || 0).toLocaleString()}`;
+    const sym = (window as any).__CURRENCY_SYMBOL__ || "৳";
+    discountAmountEl.textContent = `-${sym}${(discount.discountAmount || 0).toLocaleString()}`;
     appliedDiscountCodeEl.textContent = discount.code;
     appliedDiscountCodeEl.parentElement!.classList.remove("hidden");
   } else {
@@ -256,11 +260,12 @@ export async function updateTotals() {
 
   if (!subtotalEl || !shippingEl || !totalEl || !discountHiddenInput) return;
 
-  subtotalEl.textContent = `৳${totalAmount.toLocaleString()}`;
+  const sym = (window as any).__CURRENCY_SYMBOL__ || "৳";
+  subtotalEl.textContent = `${sym}${totalAmount.toLocaleString()}`;
   shippingEl.textContent =
     hasFreeDeliveryItem && shippingFee === 0
       ? "Free"
-      : `৳${shippingFee.toLocaleString()}`;
+      : `${sym}${shippingFee.toLocaleString()}`;
 
   let finalTotal = totalAmount + shippingFee;
 
@@ -276,7 +281,7 @@ export async function updateTotals() {
     discountHiddenInput.value = "";
   }
 
-  totalEl.textContent = `৳${Math.max(0, finalTotal).toLocaleString()}`;
+  totalEl.textContent = `${sym}${Math.max(0, finalTotal).toLocaleString()}`;
   updateDiscountUI();
 }
 
@@ -304,6 +309,7 @@ export async function renderCartItems() {
     return;
   }
 
+  const csym = (window as any).__CURRENCY_SYMBOL__ || "৳";
   cartItemsContainer.innerHTML = Object.values(items)
     .map(
       (item) => `
@@ -320,7 +326,7 @@ export async function renderCartItems() {
                 <span class="w-5 sm:w-6 text-center text-xs sm:text-sm">${item.quantity}</span>
                 <button class="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg ring-1 sm:ring-2 ring-black/10 flex items-center justify-center hover:bg-gray-100 text-xs sm:text-sm" onclick="window.updateCartQuantity('${item.id}', '${item.variantId || ""}', ${item.quantity + 1})">+</button>
               </div>
-              <div class="text-right"><div class="font-medium text-sm sm:text-base">৳${(item.price * item.quantity).toLocaleString()}</div><div class="text-xs text-gray-500">৳${item.price.toLocaleString()} each</div></div>
+              <div class="text-right"><div class="font-medium text-sm sm:text-base">${csym}${(item.price * item.quantity).toLocaleString()}</div><div class="text-xs text-gray-500">${csym}${item.price.toLocaleString()} each</div></div>
             </div>
           </div>
         </div></div>`,
@@ -365,7 +371,7 @@ function attemptToTrackInitiateCheckout() {
         quantity: item.quantity,
         item_price: item.price,
       })),
-      currency: "BDT",
+      currency: (window as any).__CURRENCY_CODE__ || "BDT",
       num_items: Object.values(items).reduce(
         (sum, item) => sum + item.quantity,
         0,

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatDiscountBadge } from "@/components/product/lib/pricing-engine";
 import { getOptimizedImageUrl } from "@/lib/image-optimizer";
+import { getCurrencySymbol } from "@/lib/currency";
 
 function ProductCarouselCard({ product }: { product: Product }) {
   const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
@@ -75,11 +76,11 @@ function ProductCarouselCard({ product }: { product: Product }) {
           <div className="flex flex-col gap-0">
             {hasDiscount && (
               <span className="text-[10px] sm:text-xs text-gray-400 line-through font-medium leading-none">
-                ৳{product.price.toLocaleString()}
+                {getCurrencySymbol()}{product.price.toLocaleString()}
               </span>
             )}
             <span className="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight leading-tight">
-              ৳{product.discountedPrice.toLocaleString()}
+              {getCurrencySymbol()}{product.discountedPrice.toLocaleString()}
             </span>
           </div>
           {/* Mobile View Button */}

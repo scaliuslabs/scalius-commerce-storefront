@@ -109,7 +109,8 @@ function setPayButton(text, disabled = false) {
 }
 
 function currencyFmt(amount) {
-  return "৳" + Number(amount).toFixed(0);
+  var sym = window.__CURRENCY_SYMBOL__ || "৳";
+  return sym + Number(amount).toFixed(0);
 }
 
 // ── Load checkout data ────────────────────────────────────────────────────────
@@ -272,13 +273,14 @@ async function createOrder(paymentMethod) {
     city: checkoutData.city,
     zone: checkoutData.zone,
     area: checkoutData.area || null,
-    cityName: checkoutData.cityName || null,
-    zoneName: checkoutData.zoneName || null,
-    areaName: checkoutData.areaName || null,
+    cityName: checkoutData.cityName || undefined,
+    zoneName: checkoutData.zoneName || undefined,
+    areaName: checkoutData.areaName || undefined,
     notes: checkoutData.notes || null,
     items,
     shippingCharge: parseFloat(checkoutData.shippingCharge || "0"),
     discountAmount: parseFloat(checkoutData.discountAmount || "0") || null,
+    discountCode: checkoutData.discountCodeHidden || undefined,
     paymentMethod,
   };
 
@@ -290,14 +292,24 @@ async function createOrder(paymentMethod) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Order creation failed (${res.status})`);
+    // Handle nested error objects from backend
+    const errMsg = typeof err.error === 'string' ? err.error : err.error?.message || `Order creation failed (${res.status})`;
+    throw new Error(errMsg);
   }
 
   const data = await res.json();
-  return data.orderId || data.id || data.order?.id;
+  // Backend returns { success: true, data: { id, paymentMethod, totalAmount } }
+  return data.data?.id || data.orderId || data.id || data.order?.id;
 }
 
 // ── Process payment ───────────────────────────────────────────────────────────
+
+function clearCheckoutAndCart() {
+  sessionStorage.removeItem("scalius_checkout_data");
+  sessionStorage.removeItem("scalius_checkout_gateways");
+  // Also clear the cart from localStorage
+  try { localStorage.removeItem("scalius_cart"); } catch {}
+}
 
 async function processPayment() {
   if (!selectedMethod || isProcessing) return;
@@ -309,8 +321,7 @@ async function processPayment() {
     if (selectedMethod === "cod") {
       const orderId = await createOrder("cod");
       if (!orderId) throw new Error("Order creation failed");
-      sessionStorage.removeItem("scalius_checkout_data");
-      sessionStorage.removeItem("scalius_checkout_gateways");
+      clearCheckoutAndCart();
       window.location.href = `/order-success?orderId=${orderId}`;
       return;
     }
@@ -322,16 +333,11 @@ async function processPayment() {
       const orderId = await createOrder("stripe");
       if (!orderId) throw new Error("Order creation failed");
 
-      const items = Object.values(JSON.parse(checkoutData.cartItems || "{}"));
-      const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-      const shipping = parseFloat(checkoutData.shippingCharge || "0");
-      const discount = parseFloat(checkoutData.discountAmount || "0");
-      const total = Math.round((subtotal + shipping - discount) * 100); // cents
-
+      // Backend computes amount from DB order — only send orderId
       const intentRes = await fetch("/api/checkout/stripe-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, amount: total, currency: "bdt", type: "full" }),
+        body: JSON.stringify({ orderId, paymentType: "full" }),
       });
 
       if (!intentRes.ok) {
@@ -339,7 +345,9 @@ async function processPayment() {
         throw new Error(e.error || "Payment initialization failed");
       }
 
-      const { clientSecret } = await intentRes.json();
+      const intentData = await intentRes.json();
+      const clientSecret = intentData.clientSecret;
+      if (!clientSecret) throw new Error("No client secret received from payment gateway");
 
       const { error, paymentIntent } = await stripeInstance.confirmCardPayment(clientSecret, {
         payment_method: { card: stripeCard },
@@ -348,8 +356,7 @@ async function processPayment() {
       if (error) throw new Error(error.message || "Card payment failed");
 
       if (paymentIntent.status === "succeeded" || paymentIntent.status === "requires_capture") {
-        sessionStorage.removeItem("scalius_checkout_data");
-        sessionStorage.removeItem("scalius_checkout_gateways");
+        clearCheckoutAndCart();
         window.location.href = `/order-success?orderId=${orderId}&payment=stripe`;
         return;
       }
@@ -361,25 +368,13 @@ async function processPayment() {
       const orderId = await createOrder("sslcommerz");
       if (!orderId) throw new Error("Order creation failed");
 
-      const items = Object.values(JSON.parse(checkoutData.cartItems || "{}"));
-      const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-      const shipping = parseFloat(checkoutData.shippingCharge || "0");
-      const discount = parseFloat(checkoutData.discountAmount || "0");
-      const total = subtotal + shipping - discount;
-
+      // Backend reads everything from DB order — only send orderId
       const sessionRes = await fetch("/api/checkout/sslcommerz-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId,
-          amount: total,
-          currency: "BDT",
-          customerName: checkoutData.customerName,
-          customerEmail: checkoutData.customerEmail || "noreply@example.com",
-          customerPhone: checkoutData.customerPhone,
-          successUrl: `${window.location.origin}/order-success?orderId=${orderId}&payment=sslcommerz`,
-          failUrl: `${window.location.origin}/cart?error=payment_failed`,
-          cancelUrl: `${window.location.origin}/cart?error=payment_cancelled`,
+          currency: window.__CURRENCY_CODE__ || "BDT",
         }),
       });
 
@@ -388,11 +383,11 @@ async function processPayment() {
         throw new Error(e.error || "Payment gateway initialization failed");
       }
 
-      const { gatewayUrl } = await sessionRes.json();
+      const sessionData = await sessionRes.json();
+      const gatewayUrl = sessionData.gatewayUrl;
       if (!gatewayUrl) throw new Error("No gateway URL received");
 
-      sessionStorage.removeItem("scalius_checkout_data");
-      sessionStorage.removeItem("scalius_checkout_gateways");
+      clearCheckoutAndCart();
       window.location.href = gatewayUrl;
     }
 

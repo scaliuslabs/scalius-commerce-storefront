@@ -70,6 +70,8 @@ Object.values(widgetsAfterCollection).forEach((widgets) =>
   widgets.sort(sortBySortOrder)
 );
 
+const currencySymbol = layoutData?.currency?.symbol ?? "৳";
+
 function isCollection1(
   collection: CollectionWithProducts
 ): collection is CollectionWithProducts & { type: "collection1" } {
@@ -108,7 +110,7 @@ function isCollection2(
             </div>
           ))}
 
-          {isCollection1(collection) && <Collection1 collection={collection} />}
+          {isCollection1(collection) && <Collection1 collection={collection} currencySymbol={currencySymbol} />}
           {isCollection2(collection) && <Collection2 collection={collection} />}
 
           {(widgetsAfterCollection[collection.id] || []).map((widget) => (

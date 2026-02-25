@@ -9,6 +9,7 @@ import { addToCart } from "@/store/cart";
 import { trackFbAddToCart } from "@/lib/analytics";
 import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol, getCurrencyCode } from "@/lib/currency";
 import { getVariantDiscountedPrice } from "@/components/product/lib/pricing-engine";
 
 interface ProductShortcodeProps {
@@ -113,7 +114,7 @@ export default function ProductShortcode({
           item_price: finalPrice,
         },
       ],
-      currency: "BDT",
+      currency: getCurrencyCode(),
       value: finalPrice * quantity,
     });
 
@@ -171,11 +172,11 @@ export default function ProductShortcode({
           </h3>
           <div className="flex items-center gap-3">
             <span className="text-2xl sm:text-3xl font-bold text-red-600">
-              ৳{finalPrice.toLocaleString()}
+              {getCurrencySymbol()}{finalPrice.toLocaleString()}
             </span>
             {hasDiscount && (
               <span className="text-lg text-gray-500 line-through">
-                ৳{originalPrice.toLocaleString()}
+                {getCurrencySymbol()}{originalPrice.toLocaleString()}
               </span>
             )}
           </div>

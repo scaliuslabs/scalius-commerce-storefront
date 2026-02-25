@@ -113,6 +113,13 @@ const COMMON_THIRD_PARTY_DOMAINS = [
   "https://static.cloudflareinsights.com",
   "https://*.cloudflareinsights.com",
   "https://cloudflareinsights.com",
+  // Stripe payment gateway
+  "https://js.stripe.com",
+  "https://*.stripe.com",
+  // SSLCommerz payment gateway
+  "https://sandbox.sslcommerz.com",
+  "https://securepay.sslcommerz.com",
+  "https://*.sslcommerz.com",
 ];
 
 // Generate script-src directives
@@ -153,7 +160,9 @@ async function getFrameSrcDirectives(env?: any): Promise<string[]> {
     ...ESSENTIAL_FRAME_SRC,
     "https://*.google.com", // For Google services like reCAPTCHA
     "https://*.facebook.com", // For Facebook UI elements or login iframes
-
+    "https://js.stripe.com", // Stripe card elements use iframes
+    "https://*.stripe.com",
+    "https://*.sslcommerz.com", // SSLCommerz payment gateway
     ...additionalDomains,
   ];
 }
@@ -198,7 +207,7 @@ export async function setPageCspHeader(response: Response, env?: any): Promise<R
     "object-src 'none'", // Disallow plugins like Flash
     `worker-src ${(await getWorkerSrcDirectives(env)).join(" ")}`,
     "base-uri 'self'",
-    "form-action 'self' https://www.facebook.com", // Allow form submissions to self and Facebook
+    "form-action 'self' https://www.facebook.com https://*.sslcommerz.com https://*.stripe.com", // Allow form submissions
     "frame-ancestors 'self'", // Prevent clickjacking
   ];
 

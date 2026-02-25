@@ -6,12 +6,13 @@ import { formatDiscountBadge } from "./lib/pricing-engine";
 
 interface Props {
   relatedProducts: Product[];
+  currencySymbol?: string;
 }
 
-const { relatedProducts } = Astro.props;
+const { relatedProducts, currencySymbol = "৳" } = Astro.props;
 
 const formatPrice = (price: number) =>
-  `৳${price.toLocaleString("en-US", {
+  `${currencySymbol}${price.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

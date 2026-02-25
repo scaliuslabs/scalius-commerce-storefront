@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/currency";
 
 interface SearchResultItem {
   id: string;
@@ -317,10 +318,10 @@ export default function CommandPalette() {
                             <div className="text-xs text-gray-500 font-medium">
                               {p.discountedPrice ? (
                                 <span className="text-primary">
-                                  ৳{p.discountedPrice.toLocaleString()}
+                                  {getCurrencySymbol()}{p.discountedPrice.toLocaleString()}
                                 </span>
                               ) : (
-                                <span>৳{p.price?.toLocaleString()}</span>
+                                <span>{getCurrencySymbol()}{p.price?.toLocaleString()}</span>
                               )}
                             </div>
                           </div>

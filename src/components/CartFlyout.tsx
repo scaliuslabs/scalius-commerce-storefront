@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/currency";
 
 export const cartOpenState = atom<boolean>(false);
 
@@ -283,7 +284,7 @@ export default function CartFlyout() {
 
                         {/* Price */}
                         <div className="text-[12px] sm:text-sm font-bold text-gray-900 tabular-nums text-right shrink-0">
-                          ৳{(item.price * item.quantity).toLocaleString()}
+                          {getCurrencySymbol()}{(item.price * item.quantity).toLocaleString()}
                         </div>
                       </div>
 
@@ -361,7 +362,7 @@ export default function CartFlyout() {
                   Subtotal (excl. shipping)
                 </div>
                 <div className="text-xl font-bold text-gray-900 tabular-nums tracking-tight">
-                  ৳{cart.totalAmount.toLocaleString()}
+                  {getCurrencySymbol()}{cart.totalAmount.toLocaleString()}
                 </div>
               </div>
               <Button
@@ -414,7 +415,7 @@ export default function CartFlyout() {
                   </button>
                 </div>
                 <div className="text-lg font-extrabold text-gray-900 tabular-nums leading-none">
-                  ৳{cart.totalAmount.toLocaleString()}
+                  {getCurrencySymbol()}{cart.totalAmount.toLocaleString()}
                 </div>
               </div>
 

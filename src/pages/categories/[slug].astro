@@ -129,6 +129,9 @@ const activeFilterCount = Object.keys(currentFilters).filter(
 ).length;
 
 // Include product name for richer analytics data
+const currencySymbol = layoutData?.currency?.symbol ?? "৳";
+const currencyCode = layoutData?.currency?.code ?? "BDT";
+
 const analyticsProductData = products.map((p) => ({
   id: p.id,
   name: p.name,
@@ -311,7 +314,7 @@ const analyticsProductData = products.map((p) => ({
               <Fragment>
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
                   {products.map((product) => (
-                    <ProductCard product={product} />
+                    <ProductCard product={product} currencySymbol={currencySymbol} />
                   ))}
                 </div>
 
@@ -488,7 +491,7 @@ const analyticsProductData = products.map((p) => ({
         content_type: "product_group",
         content_category: categoryName,
         contents,
-        currency: "BDT",
+        currency: (window as any).__CURRENCY_CODE__ || "BDT",
         value,
       });
 

@@ -191,11 +191,19 @@ export function calculateProductPrice(
   };
 }
 
+function getSymbol(): string {
+  if (typeof window !== "undefined" && (window as any).__CURRENCY_SYMBOL__) {
+    return (window as any).__CURRENCY_SYMBOL__;
+  }
+  return "৳";
+}
+
 /**
  * Format price for display (e.g., "৳1,234.00")
  */
-export function formatPrice(price: number): string {
-  return `৳${price.toLocaleString("en-US", {
+export function formatPrice(price: number, currencySymbol?: string): string {
+  const sym = currencySymbol ?? getSymbol();
+  return `${sym}${price.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -208,6 +216,7 @@ export function formatDiscountBadge(
   discountType: DiscountType,
   discountPercentage: number | null | undefined,
   discountAmount: number | null | undefined,
+  currencySymbol?: string,
 ): string | null {
   if (
     discountType === "percentage" &&
@@ -218,7 +227,8 @@ export function formatDiscountBadge(
   }
 
   if (discountType === "flat" && discountAmount && discountAmount > 0) {
-    return `-৳${discountAmount.toLocaleString()}`;
+    const sym = currencySymbol ?? getSymbol();
+    return `-${sym}${discountAmount.toLocaleString()}`;
   }
 
   return null;
@@ -227,9 +237,9 @@ export function formatDiscountBadge(
 /**
  * Format savings text (e.g., "Save ৳200")
  */
-export function formatSavings(savingsAmount: number): string {
+export function formatSavings(savingsAmount: number, currencySymbol?: string): string {
   if (savingsAmount <= 0) return "";
-  return `Save ${formatPrice(savingsAmount)}`;
+  return `Save ${formatPrice(savingsAmount, currencySymbol)}`;
 }
 
 /**
@@ -361,9 +371,9 @@ export function getVariantPriceRange(
 /**
  * Format price range for display
  */
-export function formatPriceRange(minPrice: number, maxPrice: number): string {
+export function formatPriceRange(minPrice: number, maxPrice: number, currencySymbol?: string): string {
   if (minPrice === maxPrice) {
-    return formatPrice(minPrice);
+    return formatPrice(minPrice, currencySymbol);
   }
-  return `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
+  return `${formatPrice(minPrice, currencySymbol)} - ${formatPrice(maxPrice, currencySymbol)}`;
 }

@@ -53,6 +53,9 @@ const footerData = layoutData?.footer ?? {
 
 const faviconUrl = headerData?.favicon?.src || "/favicon.svg";
 
+const currencySymbol = layoutData?.currency?.symbol ?? "৳";
+const currencyCode = layoutData?.currency?.code ?? "BDT";
+
 const headScripts = analyticsScripts.filter(
   (script) => script.location === "head"
 );
@@ -69,9 +72,11 @@ const bodyEndScripts = analyticsScripts.filter(
   <head>
     <meta charset="UTF-8" />
 
-    <!-- Runtime API URL for client-side JS (Cloudflare Worker env vars aren't available to Vite client bundles) -->
-    <script is:inline define:vars={{ __apiBaseUrl: import.meta.env.PUBLIC_API_URL || "/api/v1" }}>
+    <!-- Runtime API URL and currency for client-side JS (Cloudflare Worker env vars aren't available to Vite client bundles) -->
+    <script is:inline define:vars={{ __apiBaseUrl: import.meta.env.PUBLIC_API_URL || "/api/v1", __currencySymbol: currencySymbol, __currencyCode: currencyCode }}>
       window.__API_BASE_URL__ = __apiBaseUrl;
+      window.__CURRENCY_SYMBOL__ = __currencySymbol;
+      window.__CURRENCY_CODE__ = __currencyCode;
     </script>
 
     <!-- Stale Asset Detector -->

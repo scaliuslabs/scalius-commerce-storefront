@@ -311,7 +311,8 @@ export interface CreateOrderPayload {
   }>;
   shippingCharge: number;
   discountAmount?: number | null;
-  discountCode?: string | null; // NEW: for logging discount usage
+  discountCode?: string | null;
+  paymentMethod?: "cod" | "stripe" | "sslcommerz";
 }
 
 // --- Other Types ---

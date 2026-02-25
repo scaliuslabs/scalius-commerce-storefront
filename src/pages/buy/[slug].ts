@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getProductBySlug } from "@/lib/api";
+import { getLayoutData } from "@/lib/api/storefront";
 import type { CartItem } from "@/store/cart";
 
 export const prerender = false;
@@ -20,6 +21,8 @@ export const GET: APIRoute = async ({ params, url }) => {
     }
 
     const { product, images, variants, category } = productData;
+    const layoutData = await getLayoutData();
+    const currencyCode = layoutData?.currency?.code ?? "BDT";
     const searchParams = url.searchParams;
     const requestedVariantId = searchParams.get("variant");
     const quantity = parseInt(searchParams.get("qty") || "1", 10) || 1;
@@ -109,7 +112,7 @@ export const GET: APIRoute = async ({ params, url }) => {
       content_name: cartItem.name,
       content_type: "product",
       contents: eventContents,
-      currency: "BDT",
+      currency: currencyCode,
       value: totalValue,
     };
 

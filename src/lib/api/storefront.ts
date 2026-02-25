@@ -51,11 +51,18 @@ export interface HomepageData {
 // LAYOUT DATA TYPES
 // =============================================
 
+export interface CurrencyData {
+  code: string;
+  symbol: string;
+  usdExchangeRate: number;
+}
+
 export interface LayoutData {
   analytics: AnalyticsConfig[];
   header: HeaderData;
   navigation: NavigationItem[];
   footer: FooterData;
+  currency?: CurrencyData;
 }
 
 // =============================================

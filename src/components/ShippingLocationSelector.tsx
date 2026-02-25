@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { ShippingMethod } from "@/lib/api";
+import { getCurrencySymbol } from "@/lib/currency";
 
 export interface ShippingLocationSelectorProps {
   shippingMethods: ShippingMethod[];
@@ -84,7 +85,7 @@ export default function ShippingLocationSelector({
               </span>
             </div>
             <span className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap ml-2">
-              ৳{method.fee.toLocaleString()}
+              {getCurrencySymbol()}{method.fee.toLocaleString()}
             </span>
           </Label>
         ))}

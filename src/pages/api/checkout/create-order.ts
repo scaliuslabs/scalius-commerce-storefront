@@ -18,7 +18,11 @@ export const POST: APIRoute = async ({ request }) => {
     const data = await res.json() as Record<string, unknown>;
 
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: (data.error as string) || (data.message as string) || "Order creation failed" }), {
+      // Backend returns errors as { error: { code, message } } or { error: string }
+      const errorMsg = typeof data.error === 'string'
+        ? data.error
+        : (data.error as any)?.message || (data.details as string) || (data.message as string) || "Order creation failed";
+      return new Response(JSON.stringify({ success: false, error: errorMsg }), {
         status: res.status,
         headers: { "Content-Type": "application/json" },
       });

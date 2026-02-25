@@ -15,6 +15,7 @@ import {
   getFacebookCategory,
   escapeXmlCategory,
 } from '@/lib/category-mapping';
+import { getLayoutData } from '@/lib/api';
 
 export const prerender = false;
 
@@ -37,8 +38,8 @@ function escapeXml(text: string | null | undefined): string {
 /**
  * Formats price for Facebook feed (number + space + currency)
  */
-function formatPrice(price: number): string {
-  return `${price.toFixed(2)} BDT`;
+function formatFeedPrice(price: number, currencyCode: string): string {
+  return `${price.toFixed(2)} ${currencyCode}`;
 }
 
 /**
@@ -59,7 +60,7 @@ function getAvailability(product: Product): 'in stock' | 'out of stock' {
 /**
  * Generates a single product item for the feed
  */
-function generateProductItem(product: Product, baseUrl: string): string {
+function generateProductItem(product: Product, baseUrl: string, currencyCode: string): string {
   const productUrl = `${baseUrl}/products/${product.slug}`;
   const availability = getAvailability(product);
 
@@ -79,7 +80,7 @@ function generateProductItem(product: Product, baseUrl: string): string {
   item += `    <g:link>${escapeXml(productUrl)}</g:link>\n`;
   item += `    <g:availability>${availability}</g:availability>\n`;
   item += `    <g:condition>new</g:condition>\n`;
-  item += `    <g:price>${formatPrice(product.discountedPrice || product.price)}</g:price>\n`;
+  item += `    <g:price>${formatFeedPrice(product.discountedPrice || product.price, currencyCode)}</g:price>\n`;
 
   // Image (required)
   if (product.imageUrl) {
@@ -97,7 +98,7 @@ function generateProductItem(product: Product, baseUrl: string): string {
 
   // Sale price if there's a discount
   if (product.discountedPrice && product.discountedPrice < product.price) {
-    item += `    <g:sale_price>${formatPrice(product.discountedPrice)}</g:sale_price>\n`;
+    item += `    <g:sale_price>${formatFeedPrice(product.discountedPrice, currencyCode)}</g:sale_price>\n`;
   }
 
   // Item group ID for variants
@@ -136,7 +137,7 @@ function generateProductItem(product: Product, baseUrl: string): string {
     item += `    <g:shipping>\n`;
     item += `      <g:country>BD</g:country>\n`;
     item += `      <g:service>Standard</g:service>\n`;
-    item += `      <g:price>0.00 BDT</g:price>\n`;
+    item += `      <g:price>0.00 ${currencyCode}</g:price>\n`;
     item += `    </g:shipping>\n`;
   }
 
@@ -147,7 +148,7 @@ function generateProductItem(product: Product, baseUrl: string): string {
 /**
  * Generates the complete Facebook product feed
  */
-function generateFacebookFeed(products: Product[], baseUrl: string): string {
+function generateFacebookFeed(products: Product[], baseUrl: string, currencyCode: string): string {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">\n';
   xml += '<channel>\n';
@@ -156,7 +157,7 @@ function generateFacebookFeed(products: Product[], baseUrl: string): string {
   xml += `<description>${escapeXml('Complete product catalog for Facebook/Instagram shopping')}</description>\n`;
 
   for (const product of products) {
-    xml += generateProductItem(product, baseUrl);
+    xml += generateProductItem(product, baseUrl, currencyCode);
   }
 
   xml += '</channel>\n';
@@ -188,6 +189,10 @@ export const GET: APIRoute = async ({ url }) => {
       return new Response('Invalid limit parameter', { status: 400 });
     }
 
+    // Fetch layout data for currency settings
+    const layoutData = await getLayoutData();
+    const currencyCode = layoutData?.currency?.code ?? "BDT";
+
     // Fetch products
     const response = await getAllProducts({
       page: page,
@@ -208,7 +213,7 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     // Generate feed XML
-    const xml = generateFacebookFeed(activeProducts, baseUrl);
+    const xml = generateFacebookFeed(activeProducts, baseUrl, currencyCode);
 
     return new Response(xml, {
       status: 200,

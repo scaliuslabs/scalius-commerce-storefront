@@ -7,9 +7,10 @@ import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 interface Props {
   product: Product;
+  currencySymbol?: string;
 }
 
-const { product } = Astro.props;
+const { product, currencySymbol = "৳" } = Astro.props;
 
 const hasDiscount = product.discountedPrice < product.price;
 const discountBadge = formatDiscountBadge(
@@ -86,12 +87,12 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
         {
           hasDiscount && (
             <span class="text-[10px] sm:text-xs text-gray-400 line-through font-medium leading-none">
-              ৳{product.price.toLocaleString()}
+              {currencySymbol}{product.price.toLocaleString()}
             </span>
           )
         }
         <span class="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight leading-tight">
-          ৳{product.discountedPrice.toLocaleString()}
+          {currencySymbol}{product.discountedPrice.toLocaleString()}
         </span>
       </div>
 

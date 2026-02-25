@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import type { FilterableAttribute } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { getCurrencySymbol } from "@/lib/currency";
 
 interface CategoryFiltersProps {
   attributes: FilterableAttribute[];
@@ -416,9 +417,10 @@ export default function CategoryFilters({
 
   // Format price display for slider labels
   const formatPriceDisplay = (priceK: number): string => {
-    if (priceK === 0) return "৳0";
-    if (priceK < 1) return `৳${(priceK * 1000).toLocaleString()}`;
-    return `৳${priceK}K`;
+    const sym = getCurrencySymbol();
+    if (priceK === 0) return `${sym}0`;
+    if (priceK < 1) return `${sym}${(priceK * 1000).toLocaleString()}`;
+    return `${sym}${priceK}K`;
   };
 
   return (
@@ -517,7 +519,7 @@ export default function CategoryFilters({
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                        ৳
+                        {getCurrencySymbol()}
                       </span>
                       <Input
                         type="number"
@@ -540,7 +542,7 @@ export default function CategoryFilters({
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                        ৳
+                        {getCurrencySymbol()}
                       </span>
                       <Input
                         type="number"

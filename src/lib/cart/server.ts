@@ -64,9 +64,9 @@ export async function processOrder(formData: FormData) {
       throw new Error("Please enter a valid Bangladeshi phone number");
     }
 
-    let cityName: string | null = null;
-    let zoneName: string | null = null;
-    let areaName: string | null = null;
+    let cityName: string | undefined = undefined;
+    let zoneName: string | undefined = undefined;
+    let areaName: string | undefined = undefined;
 
     try {
       const allCities = await getCitiesFromApi();
@@ -218,7 +218,7 @@ export async function processOrder(formData: FormData) {
       discountCode = validationResult.discount?.code || null;
 
       if (discountAmount && discountCode) {
-        const note = `[Discount Applied: ${discountCode} (-৳${discountAmount})]`;
+        const note = `[Discount Applied: ${discountCode} (-${discountAmount})]`;
         finalNotes = finalNotes ? `${finalNotes}\n${note}` : note;
       }
     }
@@ -238,6 +238,8 @@ export async function processOrder(formData: FormData) {
       items: processedItems,
       shippingCharge,
       discountAmount,
+      discountCode: discountCode || undefined,
+      paymentMethod: "cod",
     };
 
     const result = await createOrder(payload);

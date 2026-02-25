@@ -149,6 +149,15 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
 
       if (cachedResponse) {
         const response = new Response(cachedResponse.body, cachedResponse);
+        // Override the stored Cache-Control with browser-safe headers.
+        // The stored response has `public, max-age=31536000, immutable` for edge storage
+        // but the browser must ALWAYS revalidate to avoid serving stale content.
+        response.headers.set(
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate",
+        );
+        response.headers.set("Pragma", "no-cache");
+        response.headers.set("Expires", "0");
         const cacheStatus = `HIT; v=${cacheVersion}; build=${BUILD_ID}; project=${hostname}`;
         response.headers.set("X-Cache-Status", cacheStatus);
         return await setPageCspHeader(response, locals.runtime?.env);
