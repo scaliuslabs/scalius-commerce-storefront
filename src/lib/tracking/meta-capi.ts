@@ -60,8 +60,7 @@ function getStandardUserData(): Partial<MetaCapiEventPayload["userData"]> {
   const userCity = getFromSession("scalius_user_city");
   if (userCity) userData.ct = userCity.toLowerCase().trim();
 
-  // Assuming Country is BD based on currency/shipping config, providing baseline
-  userData.country = "bd";
+  // We only send explicitly collected user data (no hardcoded fallbacks for country, let Meta infer from IP if not provided by user checkout)
 
   return userData;
 }
