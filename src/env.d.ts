@@ -16,10 +16,12 @@ interface ImportMeta {
 
 // Add types for Cloudflare runtime environment
 type KVNamespace = import("@cloudflare/workers-types").KVNamespace;
+type Fetcher = import("@cloudflare/workers-types").Fetcher;
 
 type Runtime = import("@astrojs/cloudflare").Runtime<{
   // This makes the KV binding available on `locals.runtime.env`
   CACHE_CONTROL: KVNamespace;
+  BACKEND_API: Fetcher;
 }>;
 
 declare namespace App {

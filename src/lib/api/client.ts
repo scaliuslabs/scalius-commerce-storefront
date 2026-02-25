@@ -131,12 +131,27 @@ export async function fetchWithRetry(
       options.cache = "no-store";
     }
 
-    // Use AbortSignal.timeout() per CF best practices - cleaner than manual AbortController
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      signal: AbortSignal.timeout(timeout),
-    });
+    // Use Cloudflare Service Bindings if available during SSR for 0ms latency
+    const backendApi =
+      (import.meta.env as any).BACKEND_API ||
+      (typeof process !== "undefined" && process.env ? process.env.BACKEND_API : undefined) ||
+      (globalThis as any).env?.BACKEND_API;
+
+    let response: Response;
+    if (import.meta.env.SSR && backendApi && url.startsWith(API_BASE_URL)) {
+      const request = new Request(url, {
+        ...options,
+        headers,
+        signal: AbortSignal.timeout(timeout),
+      });
+      response = await backendApi.fetch(request);
+    } else {
+      response = await fetch(url, {
+        ...options,
+        headers,
+        signal: AbortSignal.timeout(timeout),
+      });
+    }
 
     const newToken = response.headers.get("X-New-Token");
     if (newToken) {

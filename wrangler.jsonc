@@ -23,6 +23,13 @@
       "id": "b69ad8d7d9b342bb83849caef7142842"
     }
   ],
+  // Service binding to the backend for 0ms latency internal API calls
+  "services": [
+    {
+      "binding": "BACKEND_API",
+      "service": "testdash"
+    }
+  ],
   "vars": {
     "PUBLIC_API_URL": "https://dash.wrygo.com/api/v1",
     "PUBLIC_API_BASE_URL": "https://dash.wrygo.com",
