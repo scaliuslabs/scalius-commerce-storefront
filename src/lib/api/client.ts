@@ -132,10 +132,16 @@ export async function fetchWithRetry(
     }
 
     // Use Cloudflare Service Bindings if available during SSR for 0ms latency
-    const backendApi =
-      (import.meta.env as any).BACKEND_API ||
-      (typeof process !== "undefined" && process.env ? process.env.BACKEND_API : undefined) ||
-      (globalThis as any).env?.BACKEND_API;
+    // Extracted via dynamic import of node:async_hooks to prevent breaking browser builds
+    let backendApi: any = undefined;
+    if (import.meta.env.SSR) {
+      try {
+        const { apiContext } = await import("./context");
+        backendApi = apiContext.getStore()?.BACKEND_API;
+      } catch (e) {
+        // Fallback
+      }
+    }
 
     let response: Response;
     if (import.meta.env.SSR && backendApi && url.startsWith(API_BASE_URL)) {

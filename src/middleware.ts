@@ -1,7 +1,8 @@
 // src/middleware.ts
 /// <reference types="@cloudflare/workers-types" />
 
-import { defineMiddleware } from "astro:middleware";
+import { defineMiddleware, sequence } from "astro:middleware";
+import { apiContext } from "@/lib/api/context";
 import { setPageCspHeader } from "@/lib/middleware-helper/csp-handler";
 import { setEdgeCacheContext } from "@/lib/edge-cache";
 import { BUILD_ID } from "@/config/build-id";
@@ -243,4 +244,9 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
   return await setPageCspHeader(response, locals.runtime?.env);
 });
 
-export const onRequest = cachingMiddleware;
+const apiContextMiddleware = defineMiddleware((context, next) => {
+  const backendApi = context.locals.runtime?.env?.BACKEND_API;
+  return apiContext.run({ BACKEND_API: backendApi as any }, next);
+});
+
+export const onRequest = sequence(apiContextMiddleware, cachingMiddleware);
