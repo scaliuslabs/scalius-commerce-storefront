@@ -44,10 +44,24 @@ function getStandardUserData(): Partial<MetaCapiEventPayload["userData"]> {
   };
 
   const userPhone = getFromSession("scalius_user_phone");
-  if (userPhone) userData.ph = userPhone;
+  // Meta expects phone numbers to contain only digits, with country code. We will let the backend handle strict hashing if needed, or pass it raw here.
+  if (userPhone) userData.ph = userPhone.replace(/[^\d+]/g, "");
 
   const userEmail = getFromSession("scalius_user_email");
-  if (userEmail) userData.em = userEmail;
+  if (userEmail) userData.em = userEmail.toLowerCase().trim();
+
+  const userName = getFromSession("scalius_user_name");
+  if (userName) {
+    const parts = userName.trim().split(/\s+/);
+    if (parts.length > 0) userData.fn = parts[0].toLowerCase();
+    if (parts.length > 1) userData.ln = parts.slice(1).join(" ").toLowerCase();
+  }
+
+  const userCity = getFromSession("scalius_user_city");
+  if (userCity) userData.ct = userCity.toLowerCase().trim();
+
+  // Assuming Country is BD based on currency/shipping config, providing baseline
+  userData.country = "bd";
 
   return userData;
 }

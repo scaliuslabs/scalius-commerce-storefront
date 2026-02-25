@@ -703,26 +703,26 @@ const submitLabel = codOnly
     });
   });
 
-  // ── PII capture (save phone/email in sessionStorage) ────────────────────
+  // ── PII capture (save to sessionStorage for Meta CAPI Matching) ───────────
   function setupPiiCapture() {
-    const phoneInput = document.getElementById("customerPhone") as HTMLInputElement;
-    const emailInput = document.getElementById("customerEmail") as HTMLInputElement;
-
     const save = (key: string, value: string) => {
       if (!value?.trim()) { sessionStorage.removeItem(key); return; }
       try { sessionStorage.setItem(key, value.trim()); } catch {}
     };
 
-    if (phoneInput) {
-      phoneInput.addEventListener("change", () => save("scalius_user_phone", phoneInput.value));
-      const saved = sessionStorage.getItem("scalius_user_phone");
-      if (saved && !phoneInput.value) phoneInput.value = saved;
-    }
-    if (emailInput) {
-      emailInput.addEventListener("change", () => save("scalius_user_email", emailInput.value));
-      const saved = sessionStorage.getItem("scalius_user_email");
-      if (saved && !emailInput.value) emailInput.value = saved;
-    }
+    const captureInput = (id: string, storageKey: string) => {
+      const input = document.getElementById(id) as HTMLInputElement;
+      if (input) {
+        input.addEventListener("change", () => save(storageKey, input.value));
+        const saved = sessionStorage.getItem(storageKey);
+        if (saved && !input.value) input.value = saved;
+      }
+    };
+
+    captureInput("customerPhone", "scalius_user_phone");
+    captureInput("customerEmail", "scalius_user_email");
+    captureInput("customerName", "scalius_user_name");
+    captureInput("citySearch", "scalius_user_city");
   }
 
   document.addEventListener("DOMContentLoaded", setupPiiCapture);

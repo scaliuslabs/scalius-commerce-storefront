@@ -9,14 +9,14 @@ import { createApiUrl, fetchWithRetry } from "./client";
  */
 export interface MetaCapiEventPayload {
   eventName:
-    | "ViewContent"
-    | "Search"
-    | "AddToCart"
-    | "InitiateCheckout"
-    | "AddPaymentInfo"
-    | "Purchase"
-    | "Lead"
-    | "CompleteRegistration";
+  | "ViewContent"
+  | "Search"
+  | "AddToCart"
+  | "InitiateCheckout"
+  | "AddPaymentInfo"
+  | "Purchase"
+  | "Lead"
+  | "CompleteRegistration";
   eventSourceUrl: string;
   userData: {
     em?: string;
@@ -26,6 +26,10 @@ export interface MetaCapiEventPayload {
     fbp?: string;
     fbc?: string;
     external_id?: string[];
+    fn?: string;
+    ln?: string;
+    ct?: string;
+    country?: string;
   };
   customData?: {
     value?: number;

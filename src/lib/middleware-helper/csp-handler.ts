@@ -24,7 +24,11 @@ async function parseAdditionalDomains(env?: any): Promise<string[]> {
           try {
             const url = `${apiUrl}/api/settings/security`;
             const response = await fetch(url, {
-              headers: { "Accept": "application/json" },
+              headers: {
+                "Accept": "application/json",
+                // Pass the API token to authenticate against the backend Astro endpoint
+                "Authorization": `Bearer ${env?.API_TOKEN || import.meta.env.API_TOKEN || ""}`
+              },
               signal: AbortSignal.timeout(4000),
             });
 

@@ -145,7 +145,6 @@ export async function fetchWithRetry(
 
     let response: Response;
     if (import.meta.env.SSR && backendApi && url.startsWith(API_BASE_URL)) {
-      console.log(`[API Routing] ⚡️ SECURE ISOLATE BINDING: ${url}`);
       const request = new Request(url, {
         ...options,
         headers,
@@ -153,7 +152,6 @@ export async function fetchWithRetry(
       });
       response = await backendApi.fetch(request);
     } else {
-      console.log(`[API Routing] 🌐 PUBLIC HTTP NETWORK: ${url} (SSR: ${Boolean(import.meta.env.SSR)})`);
       response = await fetch(url, {
         ...options,
         headers,

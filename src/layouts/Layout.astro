@@ -139,6 +139,9 @@ const bodyEndScripts = analyticsScripts.filter(
     {headScripts.map((script) => <Fragment set:html={script.config} />)}
 
     <script is:inline>
+      // Stub for Facebook Pixel so Partytown doesn't crash (TypeError: reading 'apply') if Pixel is disabled
+      window.fbq = window.fbq || function() { (window.fbq.q = window.fbq.q || []).push(arguments) };
+      
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const fbclid = urlParams.get("fbclid");
