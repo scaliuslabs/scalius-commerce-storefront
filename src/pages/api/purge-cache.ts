@@ -20,11 +20,7 @@ async function warmCriticalCaches(baseUrl: string): Promise<void> {
     "/", // Homepage - triggers getLayoutData() + getHomepageData()
   ];
 
-  console.log(`[CacheWarm] Starting warm for ${baseUrl} in 5 seconds...`);
-
-  // Wait 5 seconds before warming to let the purge fully propagate
-  // and avoid race conditions with simultaneous requests
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  console.log(`[CacheWarm] Starting warm for ${baseUrl} immediately after purge...`);
 
   const results = await Promise.allSettled(
     criticalEndpoints.map(async (endpoint) => {

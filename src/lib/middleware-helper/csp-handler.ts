@@ -22,12 +22,10 @@ async function parseAdditionalDomains(env?: any): Promise<string[]> {
         "global_security_settings",
         async () => {
           try {
-            const url = `${apiUrl}/api/settings/security`;
+            const url = `${apiUrl}/api/v1/storefront/csp`;
             const response = await fetch(url, {
               headers: {
-                "Accept": "application/json",
-                // Pass the API token to authenticate against the backend Astro endpoint
-                "Authorization": `Bearer ${env?.API_TOKEN || import.meta.env.API_TOKEN || ""}`
+                "Accept": "application/json"
               },
               signal: AbortSignal.timeout(4000),
             });
@@ -39,7 +37,8 @@ async function parseAdditionalDomains(env?: any): Promise<string[]> {
               // and we don't re-fetch on every single request
               return EMPTY_CSP_DATA;
             }
-            return await response.json() as { cspAllowedDomains?: string };
+            const json = await response.json() as { cspAllowedDomains?: string };
+            return { cspAllowedDomains: json.cspAllowedDomains };
           } catch {
             // Return empty sentinel so failure is cached too
             return EMPTY_CSP_DATA;

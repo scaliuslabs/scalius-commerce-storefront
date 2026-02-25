@@ -139,9 +139,16 @@ const bodyEndScripts = analyticsScripts.filter(
     {headScripts.map((script) => <Fragment set:html={script.config} />)}
 
     <script is:inline>
-      // Stub for Facebook Pixel so Partytown doesn't crash (TypeError: reading 'apply') if Pixel is disabled
+      // Stub for Facebook Pixel on the main thread
       window.fbq = window.fbq || function() { (window.fbq.q = window.fbq.q || []).push(arguments) };
-      
+    </script>
+    <script type="text/partytown">
+      // Stub for Facebook Pixel INSIDE the Partytown Web Worker
+      // Prevents "TypeError: Cannot read properties of undefined (reading 'apply')" 
+      // when Partytown proxies fbq() calls here but the real script hasn't loaded.
+      self.fbq = self.fbq || function() { (self.fbq.q = self.fbq.q || []).push(arguments) };
+    </script>
+    <script is:inline>
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const fbclid = urlParams.get("fbclid");
