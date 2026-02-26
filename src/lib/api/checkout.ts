@@ -15,13 +15,19 @@ export interface GatewayConfig {
 export interface CheckoutConfig {
   gateways: GatewayConfig[];
   guestCheckoutEnabled?: boolean;
-  authVerificationMethod?: "email" | "phone" | "both";
+  authVerificationMethod?: "email" | "phone" | "both" | "email_phone_mandatory" | "whatsapp_otp" | "sms_otp";
+  checkoutMode?: "guest_cod_only" | "gateways_only" | "all";
+  partialPaymentEnabled?: boolean;
+  partialPaymentAmount?: number;
 }
 
 const COD_FALLBACK: CheckoutConfig = {
   gateways: [{ id: "cod", name: "Cash on Delivery", currencies: ["bdt"] }],
   guestCheckoutEnabled: true,
-  authVerificationMethod: "both",
+  authVerificationMethod: "email",
+  checkoutMode: "all",
+  partialPaymentEnabled: false,
+  partialPaymentAmount: 0,
 };
 
 /**
@@ -55,7 +61,9 @@ export async function getCheckoutConfig(): Promise<CheckoutConfig> {
 
 /**
  * Check if only COD is active (simple COD-only flow).
+ * If advance partial payments are enabled, this flow is disabled because a gateway is required.
  */
 export function isCodOnly(config: CheckoutConfig): boolean {
+  if (config.partialPaymentEnabled) return false;
   return config.gateways.length === 1 && config.gateways[0].id === "cod";
 }

@@ -152,9 +152,26 @@ function renderSummary() {
     <div class="flex justify-between"><span>${items.length} item(s)</span><span>${currencyFmt(subtotal)}</span></div>
     <div class="flex justify-between"><span>Shipping</span><span>${currencyFmt(shipping)}</span></div>
     ${discount > 0 ? `<div class="flex justify-between text-green-600"><span>Discount</span><span>-${currencyFmt(discount)}</span></div>` : ""}
-    <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2"><span>Total</span><span>${currencyFmt(total)}</span></div>
-    <div class="text-xs text-gray-500 mt-2">To: ${checkoutData.customerName} • ${checkoutData.shippingAddress || ""}</div>
+    <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2 mb-2"><span>Total</span><span>${currencyFmt(total)}</span></div>
   `;
+
+  if (checkoutConfig.partialPaymentEnabled && checkoutConfig.partialPaymentAmount > 0) {
+    const advance = Math.min(checkoutConfig.partialPaymentAmount, total);
+    const balance = total - advance;
+    details.innerHTML += `
+      <div class="flex justify-between font-bold text-blue-700 bg-blue-50 p-2 rounded-lg mb-1 border border-blue-100">
+        <span>Advance Payment Required</span><span>${currencyFmt(advance)}</span>
+      </div>
+      <div class="flex justify-between text-gray-600 text-xs px-2 mb-2">
+        <span>Balance Due on Delivery</span><span>${currencyFmt(balance)}</span>
+      </div>
+    `;
+  }
+
+  details.innerHTML += `
+    <div class="text-[10px] text-gray-500 mt-2 border-t border-gray-200 pt-2">To: ${checkoutData.customerName} • ${checkoutData.shippingAddress || ""}</div>
+  `;
+
   section.classList.remove("hidden");
 }
 
@@ -172,15 +189,24 @@ function renderGateways() {
   container.innerHTML = "";
 
   for (const gw of gateways) {
+    // If partial block is active, skip COD as a standalone option since online pay is mandatory
+    if (checkoutConfig.partialPaymentEnabled && gw.id === "cod") continue;
+
     const meta = GATEWAY_META[gw.id] || { label: gw.name, icon: "💳", desc: "" };
+    
+    // Adjust label if partial payment is required
+    let label = meta.label;
+    if (checkoutConfig.partialPaymentEnabled && (gw.id === "stripe" || gw.id === "sslcommerz")) {
+      label = `Pay Advance via ${gw.name === "Online Payment" ? "Online" : "Card"}`;
+    }
     const card = document.createElement("div");
     card.className = "payment-method-card cursor-pointer rounded-xl border-2 border-gray-200 bg-white p-4 transition-all hover:border-gray-400 flex items-center gap-4";
     card.dataset.method = gw.id;
     card.innerHTML = `
       <div class="text-2xl">${meta.icon}</div>
       <div class="flex-1">
-        <p class="font-semibold text-sm">${meta.label}</p>
-        <p class="text-xs text-gray-500">${meta.desc}</p>
+        <p class="font-semibold text-sm">${label}</p>
+        <p class="text-[10px] text-gray-500 leading-tight mt-0.5">${meta.desc}</p>
         ${gw.id === "sslcommerz" && gw.sandbox ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium">Sandbox</span>' : ""}
       </div>
       <div class="method-check w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0">
@@ -334,10 +360,16 @@ async function processPayment() {
       if (!orderId) throw new Error("Order creation failed");
 
       // Backend computes amount from DB order — only send orderId
+      const intentPayload = { 
+        orderId, 
+        paymentType: checkoutConfig.partialPaymentEnabled ? "deposit" : "full",
+        ...(checkoutConfig.partialPaymentEnabled && { depositAmount: checkoutConfig.partialPaymentAmount })
+      };
+      
       const intentRes = await fetch("/api/checkout/stripe-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, paymentType: "full" }),
+        body: JSON.stringify(intentPayload),
       });
 
       if (!intentRes.ok) {
@@ -369,13 +401,17 @@ async function processPayment() {
       if (!orderId) throw new Error("Order creation failed");
 
       // Backend reads everything from DB order — only send orderId
+      const sessionPayload = {
+        orderId,
+        currency: window.__CURRENCY_CODE__ || "BDT",
+        paymentType: checkoutConfig.partialPaymentEnabled ? "deposit" : "full",
+        ...(checkoutConfig.partialPaymentEnabled && { depositAmount: checkoutConfig.partialPaymentAmount })
+      };
+
       const sessionRes = await fetch("/api/checkout/sslcommerz-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          currency: window.__CURRENCY_CODE__ || "BDT",
-        }),
+        body: JSON.stringify(sessionPayload),
       });
 
       if (!sessionRes.ok) {

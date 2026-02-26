@@ -20,7 +20,7 @@ export default function AuthModal() {
   const [otp, setOtp] = useState("");
 
   // Settings injected globally
-  const [allowedMethods, setAllowedMethods] = useState<"email" | "phone" | "both">("both");
+  const [allowedMethods, setAllowedMethods] = useState<"email" | "phone" | "both" | "email_phone_mandatory" | "whatsapp_otp" | "sms_otp">("both");
 
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
 
@@ -42,8 +42,10 @@ export default function AuthModal() {
     getCheckoutConfig().then((config) => {
       if (config.authVerificationMethod) {
         setAllowedMethods(config.authVerificationMethod);
-        if (config.authVerificationMethod !== "both") {
-          setMethod(config.authVerificationMethod);
+        if (config.authVerificationMethod === "whatsapp_otp" || config.authVerificationMethod === "sms_otp" || config.authVerificationMethod === "phone") {
+          setMethod("phone");
+        } else if (config.authVerificationMethod === "email") {
+          setMethod("email");
         }
       }
     });
@@ -118,8 +120,12 @@ export default function AuthModal() {
       const phoneValid = /^\+?[0-9]{10,15}$/.test(phoneInput.trim());
       return emailValid && phoneValid;
     } else {
-      // Basic phone validation (allowing digits and + sign)
-      return /^\+?[0-9]{10,15}$/.test(identifier.trim());
+      const phoneValid = /^\+?[0-9]{10,15}$/.test(identifier.trim());
+      if (allowedMethods === "email_phone_mandatory") {
+        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(phoneInput.trim());
+        return phoneValid && emailValid;
+      }
+      return phoneValid;
     }
   };
 
@@ -287,7 +293,7 @@ export default function AuthModal() {
               Access your orders, track shipments, and checkout faster.
             </p>
 
-            {allowedMethods === "both" && (
+            {(allowedMethods === "both" || allowedMethods === "email_phone_mandatory") && (
               <div className="flex rounded-lg border border-gray-200 p-1 mb-4 bg-gray-50">
                 <button
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "email" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
@@ -306,7 +312,7 @@ export default function AuthModal() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-gray-700">
-                {method === "email" ? "Email address" : "WhatsApp Number"}
+                {method === "email" ? "Email address" : (allowedMethods === "sms_otp" ? "Phone Number" : "WhatsApp Number")}
               </label>
               <input
                 type={method === "email" ? "email" : "tel"}
@@ -335,10 +341,12 @@ export default function AuthModal() {
 
             {method === "phone" && (
               <div className="space-y-1.5 mt-2">
-                <label className="text-sm font-medium text-gray-700">Email Address (Optional)</label>
+                <label className="text-sm font-medium text-gray-700">
+                  {allowedMethods === "email_phone_mandatory" ? "Email Address (Required)" : "Email Address (Optional)"}
+                </label>
                 <input
                   type="email"
-                  value={phoneInput} // Reusing phoneInput state object variable contextually for optional email to save lines
+                  value={phoneInput} // Reusing phoneInput state object variable contextually for email to save lines
                   onChange={(e) => { setPhoneInput(e.target.value); setError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                   placeholder="you@example.com"
