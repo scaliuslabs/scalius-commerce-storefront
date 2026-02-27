@@ -76,23 +76,31 @@
 
 ```bash
 ├── public/              # Static assets
-├── scripts/             # Build and utility scripts
+├── scripts/             # Build and deploy scripts
 ├── src/
 │   ├── components/      # UI Components (Header, Footer, Product, etc.)
+│   ├── config/          # Build ID and runtime config
 │   ├── layouts/         # Page layouts (Layout.astro)
 │   ├── lib/             # Utilities, API client, middleware helpers
-│   │   ├── api/         # Backend API client implementation
-│   │   └── edge-cache.ts # Custom Edge Caching logic
+│   │   ├── api/         # Backend API client (direct fetch via createApiUrl)
+│   │   ├── edge-cache.ts # L2 edge caching (Cache API + KV versioning)
+│   │   ├── smart-cache.ts # In-memory cache + request deduplication
+│   │   └── middleware-helper/ # CSP, cache context
 │   ├── pages/           # File-based routing
-│   │   ├── api/         # Internal API routes
+│   │   ├── api/         # Proxy routes (checkout, purge-cache, auth/logout)
 │   │   ├── products/    # Product details pages
+│   │   ├── categories/  # Category listing pages
+│   │   ├── buy/         # Buy/redirect pages
 │   │   ├── cart.astro   # Cart page
-│   │   └── [slug].astro # Dynamic catch-all routes
+│   │   ├── checkout.astro
+│   │   ├── order-success.astro
+│   │   ├── account.astro
+│   │   └── search/      # Search with filters
 │   ├── store/           # Global state (Cart, Toast, etc.)
-│   └── middleware.ts    # Edge caching and CSP middleware
+│   └── middleware.ts    # Edge caching, CSP, BACKEND_API context
 ├── astro.config.mjs     # Astro configuration
 ├── tailwind.config.mjs  # Tailwind configuration
-└── wrangler.toml        # Cloudflare Workers configuration
+└── wrangler.jsonc       # Cloudflare Workers configuration
 ```
 
 ## 🏁 Getting Started
@@ -121,19 +129,20 @@
 Copy the example environment file:
 
 ```bash
-cp env.template .env
+cp .env.example .env
 ```
 
-Update `.env` with your backend details:
+For local development, update `.env` with your backend details. In production, many variables can be set in `wrangler.jsonc` under `vars`; secrets should use `wrangler secret put`.
 
-| Variable         | Description                                       |
-| :--------------- | :------------------------------------------------ |
-| `API_TOKEN`      | Auth token for communicating with Scalius Backend |
-| `JWT_SECRET`     | Secret key for JWT verification                   |
-| `PURGE_TOKEN`    | Token used to authenticate cache purge requests   |
-| `PUBLIC_API_URL` | The public URL of your Scalius Backend API        |
-| `STOREFRONT_URL` | The URL where this storefront is deployed         |
-| `CDN_DOMAIN_URL` | Domain for your CDN (for image optimization)      |
+| Variable              | Description                                                                 | Required |
+| :-------------------- | :-------------------------------------------------------------------------- | :------- |
+| `PUBLIC_API_URL`      | Full URL of your Scalius Backend API (e.g. `http://localhost:4321/api/v1`)  | Yes      |
+| `PUBLIC_API_BASE_URL` | Base URL for image optimization and auth redirects (e.g. `http://localhost:4321`) | Yes  |
+| `API_TOKEN`           | Backend API token for server-side proxy routes (create-order, payment intents). Must match backend. | Yes |
+| `PURGE_TOKEN`         | Token for cache purge requests. Must match backend's `PURGE_TOKEN`.         | Yes      |
+| `STOREFRONT_URL`      | URL where this storefront is deployed (sitemaps, Facebook feed)             | Optional |
+| `CDN_DOMAIN_URL`      | CDN domain for image optimization (R2 custom domain)                         | Optional |
+| `JWT_SECRET`          | Backend JWT signing secret (for compatibility; storefront does not verify)  | Optional |
 
 ### Development
 
@@ -143,20 +152,18 @@ Start the local development server:
 pnpm dev
 ```
 
-The site will be available at `http://localhost:4321`.
+The site will be available at `http://localhost:4321` (or `http://localhost:4322` if the backend is already using 4321).
 
 ### Build & Preview
 
-To build the project for production:
+From `package.json`:
 
 ```bash
-pnpm build
-```
-
-To preview the build locally:
-
-```bash
-pnpm preview
+pnpm dev      # astro dev --host
+pnpm build    # generate-build-id + astro check + astro build
+pnpm preview  # astro preview
+pnpm deploy   # full pipeline: build ID, type check, build, wrangler deploy
+pnpm start    # node ./dist/server/entry.mjs (Node.js preview)
 ```
 
 ## ☁️ Deployment
@@ -169,37 +176,66 @@ This project is configured for **Cloudflare Workers**.
     npx wrangler login
     ```
 
-2.  **Deploy**:
+2.  **Deploy** (recommended — runs full pipeline: build ID, type check, build, deploy):
+
     ```bash
+    pnpm deploy
+    ```
+
+    Or deploy manually:
+
+    ```bash
+    pnpm build
     npx wrangler deploy
     ```
 
-Ensure you have configured your secrets in Cloudflare:
+3.  **Configure secrets** in Cloudflare (required for production):
 
-```bash
-npx wrangler secret put API_TOKEN
-npx wrangler secret put JWT_SECRET
-# ... repeat for other secrets
-```
+    ```bash
+    npx wrangler secret put API_TOKEN
+    npx wrangler secret put PURGE_TOKEN
+    ```
+
+    Non-secret variables (`PUBLIC_API_URL`, `PUBLIC_API_BASE_URL`, `STOREFRONT_URL`, `CDN_DOMAIN_URL`) can be set in `wrangler.jsonc` under `vars`.
+
+### Cloudflare bindings
+
+`wrangler.jsonc` declares:
+
+| Binding         | Type     | Purpose                                                                 |
+| :-------------- | :------- | :---------------------------------------------------------------------- |
+| `CACHE_CONTROL` | KV       | Cache version for L2 invalidation (purge-cache bumps version)           |
+| `BACKEND_API`   | Service  | Service binding to the Scalius backend for 0ms latency internal calls  |
+| `ASSETS`        | Fetcher  | Static asset serving                                                    |
+
+The `BACKEND_API` service binding allows SSR requests to call the backend without a network hop when both are deployed on Cloudflare. Configure the `service` name in `wrangler.jsonc` to match your backend Worker name.
 
 ## 🧩 Backend Integration
 
-This storefront requires a running instance of the **Scalius Commerce Lite Backend**. Ensure your `PUBLIC_API_URL` points to the correct backend endpoint.
+This storefront requires a running instance of the **Scalius Commerce Lite Backend**. Ensure your `PUBLIC_API_URL` points to the correct backend endpoint (e.g. `https://your-backend.com/api/v1`).
 
-The API client in `src/lib/api/` handles communication with the backend, including:
+The API client in `src/lib/api/` uses direct `fetch` calls via `createApiUrl` — it does **not** use the backend's generated SDK. It handles:
 
-- Fetching products, categories, and collections.
-- Handling cart operations.
-- Processing orders.
+- Fetching products, categories, collections, pages, layout data, and widgets
+- Customer auth (OTP-based), cart, checkout, and order creation
+- Payment intents (Stripe, SSLCommerz) via server-side proxy routes
+- Discount validation, shipping locations, and analytics config
+
+**Server-side proxy routes** (`src/pages/api/checkout/*`, `create-order`, `stripe-intent`, `sslcommerz-session`) require `API_TOKEN` to obtain a JWT from the backend for protected operations.
 
 ## ⚡ Performance Optimization
 
 ### Edge Caching
 
-The project uses a sophisticated `middleware.ts` to implements **L2 Caching** at the edge. It uses Cloudflare's Cache API combined with KV for versioning (`v_hostname`).
+The project uses `middleware.ts` for **L2 Caching** at the edge:
 
-- **Cacheable Paths**: Homepage, Products, Categories, Search, Sitemaps.
-- **Invalidation**: The `PURGE_TOKEN` allows the backend to trigger cache purges when content updates.
+- **L1**: In-memory `smartCache` for API responses (layout, homepage, widgets)
+- **L2**: Cloudflare Cache API for HTML, with KV (`CACHE_CONTROL`) for versioning (`v_hostname`)
+
+When the backend triggers `/api/purge-cache?token=PURGE_TOKEN`, the storefront bumps the KV version, invalidating all cached HTML and clearing the in-memory API cache. Critical paths are then warmed in the background.
+
+- **Cacheable paths**: Homepage, products, categories, search, sitemaps
+- **Non-cacheable**: Cart, checkout, account, order-success
 
 ### Image Optimization
 

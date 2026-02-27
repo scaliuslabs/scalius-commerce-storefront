@@ -54,17 +54,22 @@ It connects to the **Scalius Commerce Lite** backend for data and commerce logic
     ```
 
 3.  **Environment Variables**
-    Copy the example environment file or create a `.env` file. You need to point this to your backend:
+    Copy `.env.example` to `.env` and configure your backend connection:
 
     ```env
     PUBLIC_API_URL=http://localhost:4321/api/v1
+    PUBLIC_API_BASE_URL=http://localhost:4321
+    API_TOKEN=your_backend_api_token
+    PURGE_TOKEN=your_backend_purge_token
     ```
+
+    See the README for the full list of variables.
 
 4.  **Run Development Server**
     ```bash
     pnpm dev
     ```
-    The storefront should be running at `http://localhost:3000` (or whatever port Astro assigns).
+    The storefront runs at `http://localhost:4321` (or `http://localhost:4322` if the backend uses 4321).
 
 ## 💻 Development Workflow
 
