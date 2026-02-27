@@ -682,7 +682,28 @@ const submitLabel = codOnly
           // sessionStorage full — proceed anyway
         }
 
-        window.location.href = "/checkout";
+        submitButton.disabled = true;
+        submitButton.textContent = "Redirecting to Payment...";
+        
+        if (loadingOverlay) {
+          const loadingTitle = loadingOverlay.querySelector("h3");
+          const loadingMsg = loadingOverlay.querySelector("p");
+          if (loadingTitle) loadingTitle.textContent = "Redirecting to Payment";
+          if (loadingMsg) loadingMsg.textContent = "Please wait while we load the payment gateway options.";
+          loadingOverlay.style.display = "block";
+          document.body.style.overflow = "hidden";
+        }
+
+        if (progressBar) {
+          progressBar.style.width = "0%";
+          setTimeout(() => { progressBar.style.width = "40%"; }, 100);
+          setTimeout(() => { progressBar.style.width = "80%"; }, 300);
+        }
+
+        // Add a slight delay for a smooth visual transition
+        setTimeout(() => {
+          window.location.href = "/checkout";
+        }, 400);
         return;
       }
 

@@ -178,9 +178,27 @@ function renderSummary() {
 // ── Render payment method cards ───────────────────────────────────────────────
 
 const GATEWAY_META = {
-  stripe: { label: "Pay by Card", icon: "💳", desc: "Visa, Mastercard, American Express" },
-  sslcommerz: { label: "Online Payment", icon: "🏦", desc: "bKash, Nagad, Rocket, Net Banking" },
-  cod: { label: "Cash on Delivery", icon: "💵", desc: "Pay when your order arrives" },
+  stripe: { 
+    label: "International Payment (Card)", 
+    icon: `<svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+    </svg>`, 
+    desc: "Visa, Mastercard, American Express" 
+  },
+  sslcommerz: { 
+    label: "Bangladeshi Payment (BDT)", 
+    icon: `<svg class="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>`, 
+    desc: "bKash, Nagad, Rocket, Local Cards, Net Banking" 
+  },
+  cod: { 
+    label: "Cash on Delivery", 
+    icon: `<svg class="w-6 h-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>`, 
+    desc: "Pay when your order arrives" 
+  },
 };
 
 function renderGateways() {
@@ -203,10 +221,12 @@ function renderGateways() {
     card.className = "payment-method-card cursor-pointer rounded-xl border-2 border-gray-200 bg-white p-4 transition-all hover:border-gray-400 flex items-center gap-4";
     card.dataset.method = gw.id;
     card.innerHTML = `
-      <div class="text-2xl">${meta.icon}</div>
+      <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 border border-slate-100 shrink-0">
+        ${meta.icon}
+      </div>
       <div class="flex-1">
-        <p class="font-semibold text-sm">${label}</p>
-        <p class="text-[10px] text-gray-500 leading-tight mt-0.5">${meta.desc}</p>
+        <p class="font-semibold text-sm text-gray-900">${label}</p>
+        <p class="text-[11px] text-gray-500 leading-tight mt-0.5">${meta.desc}</p>
         ${gw.id === "sslcommerz" && gw.sandbox ? '<span class="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-medium">Sandbox</span>' : ""}
       </div>
       <div class="method-check w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0">
