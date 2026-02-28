@@ -134,9 +134,9 @@ function storeInL2<T>(key: string, data: T, ttlSeconds: number): void {
   const response = new Response(JSON.stringify(data), {
     headers: {
       "Content-Type": "application/json",
-      // Set a long Cache-Control for the edge cache
-      // Invalidation is handled by KV version in the cache key
-      "Cache-Control": `public, max-age=${ttlSeconds}`,
+      // Long TTL for Cache API storage; invalidation via KV version in cache key.
+      // SWR/stale-if-error for consistency with Hono API policy.
+      "Cache-Control": `public, max-age=${ttlSeconds}, stale-while-revalidate=120, stale-if-error=300`,
       // Track when this was cached for debugging
       "X-Cached-At": new Date().toISOString(),
       "X-Cache-Key": key,
@@ -232,6 +232,19 @@ export async function withEdgeCache<T>(
 export function clearMemoryCache(): void {
   smartCache.clear();
   inflight.clear(); // Also clear any pending requests
+}
+
+/**
+ * Selectively clears L1 (in-memory) cache entries matching given prefixes.
+ * Called by /api/purge-cache for targeted invalidation.
+ *
+ * Note: L1 keys include the KV version suffix (e.g., "product_slug_foo:v42"),
+ * but prefix matching still works because the prefix comes first.
+ */
+export function clearL1ByPrefixes(prefixes: string[]): void {
+  smartCache.deleteByPrefixes(prefixes);
+  // Also clear inflight requests that might be using stale data
+  inflight.clear();
 }
 
 export const CACHE_TTL = {

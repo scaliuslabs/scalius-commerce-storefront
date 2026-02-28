@@ -35,6 +35,29 @@ export const smartCache = {
   },
 
   /**
+   * Delete all entries whose key starts with the given prefix.
+   */
+  deleteByPrefix(prefix: string) {
+    for (const key of cacheStorage.keys()) {
+      if (key.startsWith(prefix)) {
+        cacheStorage.delete(key);
+      }
+    }
+  },
+
+  /**
+   * Delete all entries matching any of the given prefixes.
+   */
+  deleteByPrefixes(prefixes: string[]) {
+    if (!prefixes.length) return;
+    for (const key of cacheStorage.keys()) {
+      if (prefixes.some(p => key.startsWith(p))) {
+        cacheStorage.delete(key);
+      }
+    }
+  },
+
+  /**
    * Clears all cached data. Useful for purge events.
    */
   clear() {

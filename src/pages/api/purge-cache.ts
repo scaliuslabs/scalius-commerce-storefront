@@ -1,6 +1,7 @@
 // src/pages/api/purge-cache.ts
 import type { APIRoute } from "astro";
 import { smartCache } from "@/lib/smart-cache";
+import { clearL1ByPrefixes } from "@/lib/edge-cache";
 
 const CACHE_VERSION_KEY_PREFIX = "v_";
 
@@ -136,5 +137,97 @@ export const GET: APIRoute = async ({ url, locals }) => {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+  }
+};
+
+export const POST: APIRoute = async ({ request, url, locals }) => {
+  const secretToken = import.meta.env.PURGE_TOKEN;
+  const kv = locals.runtime.env.CACHE_CONTROL;
+
+  if (!secretToken) {
+    console.error("PURGE_TOKEN is not set in environment variables.");
+    return new Response(
+      JSON.stringify({ error: "Server configuration error" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  // Token can be in URL params or request body
+  let providedToken = url.searchParams.get("token");
+
+  let body: { groups?: string[]; prefixes?: string[]; bumpVersion?: boolean } = {};
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  if (!providedToken) {
+    // Also check body for token as fallback
+    providedToken = (body as any).token;
+  }
+
+  if (!providedToken || providedToken !== secretToken) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const { groups = [], prefixes = [], bumpVersion = false } = body;
+  const hostname = url.hostname;
+  const cacheKey = `${CACHE_VERSION_KEY_PREFIX}${hostname}`;
+
+  try {
+    let newVersion: number | null = null;
+
+    // Only bump HTML version if requested (some groups like 'checkout' don't need it)
+    if (bumpVersion) {
+      const currentVersionStr = await kv.get(cacheKey);
+      const currentVersion = currentVersionStr ? parseInt(currentVersionStr, 10) : 0;
+      newVersion = currentVersion + 1;
+      await kv.put(cacheKey, newVersion.toString());
+      console.log(`[SelectivePurge] Bumped HTML version to ${newVersion} for ${hostname}`);
+    }
+
+    // Selectively clear L1 cache
+    if (prefixes.length > 0) {
+      clearL1ByPrefixes(prefixes);
+      console.log(`[SelectivePurge] Cleared L1 prefixes: ${prefixes.join(", ")}`);
+    } else {
+      smartCache.clear();
+      console.log("[SelectivePurge] Cleared all L1 cache (no prefixes specified)");
+    }
+
+    // Warm critical caches if version was bumped
+    if (newVersion !== null) {
+      const protocol = url.protocol;
+      const baseUrl = `${protocol}//${hostname}`;
+      locals.runtime.ctx.waitUntil(warmCriticalCaches(baseUrl));
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Selective cache purge for ${hostname} completed.`,
+        details: {
+          groups,
+          htmlVersionBumped: bumpVersion,
+          newVersion,
+          prefixesCleared: prefixes.length > 0 ? prefixes.length : "all",
+          cacheWarmingStarted: newVersion !== null,
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  } catch (error) {
+    console.error(`Failed to execute selective purge for ${hostname}:`, error);
+    return new Response(
+      JSON.stringify({ error: "Failed to execute selective purge" }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
   }
 };

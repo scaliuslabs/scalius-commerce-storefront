@@ -27,7 +27,9 @@ export const GET: APIRoute = async ({ params }) => {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        // Align with Hono API: browser revalidates so users see changes after KV invalidation
+        "Cache-Control":
+          "public, max-age=0, stale-while-revalidate=120, stale-if-error=300",
       },
     });
   } catch (error) {
