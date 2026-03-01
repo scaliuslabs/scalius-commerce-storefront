@@ -56,6 +56,17 @@ const faviconUrl = headerData?.favicon?.src || "/favicon.svg";
 const currencySymbol = layoutData?.currency?.symbol ?? "৳";
 const currencyCode = layoutData?.currency?.code ?? "BDT";
 
+// Build dynamic CSS overrides from admin-configured theme colors.
+// Only non-empty color values are included.
+const themeColors = layoutData?.theme?.colors ?? {};
+const themeColorEntries = Object.entries(themeColors).filter(
+  ([, v]) => v && v.trim()
+);
+const themeStyleBlock =
+  themeColorEntries.length > 0
+    ? `:root, .site-root { ${themeColorEntries.map(([k, v]) => `--${k}: ${v}`).join("; ")}; }`
+    : "";
+
 const headScripts = analyticsScripts.filter(
   (script) => script.location === "head"
 );
@@ -162,6 +173,8 @@ const bodyEndScripts = analyticsScripts.filter(
         console.warn("Could not process fbclid:", e);
       }
     </script>
+
+    {themeStyleBlock && <style set:html={themeStyleBlock} />}
 
     <slot name="head" />
   </head>

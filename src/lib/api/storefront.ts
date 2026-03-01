@@ -63,6 +63,7 @@ export interface LayoutData {
   navigation: NavigationItem[];
   footer: FooterData;
   currency?: CurrencyData;
+  theme?: { colors: Record<string, string> };
 }
 
 // =============================================
