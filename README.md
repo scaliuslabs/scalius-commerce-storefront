@@ -54,7 +54,7 @@
 - **🛍️ Full Commerce Functionality**:
   - Dynamic Product & Category pages
   - Full Cart & Checkout flow
-  - Search with Command Palette
+  - Search with Command Palette (FTS5 full-text search — prefix matching, multi-word queries)
   - Product Variants & Image Zoom
 - **🎨 Modern UI/UX**:
   - **Tailwind CSS v4** for styling

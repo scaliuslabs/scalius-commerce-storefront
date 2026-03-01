@@ -8,9 +8,6 @@
   ],
   "workers_dev": true,
   "preview_urls": false,
-  "placement": {
-    "mode": "smart"
-  },
   // Static assets binding (required by @astrojs/cloudflare)
   "assets": {
     "binding": "ASSETS",
