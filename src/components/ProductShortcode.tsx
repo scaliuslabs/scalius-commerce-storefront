@@ -49,15 +49,15 @@ export default function ProductShortcode({
 
   const finalPrice = matchingVariant
     ? getVariantDiscountedPrice(
-        matchingVariant.price,
-        product.price,
-        matchingVariant.discountType,
-        matchingVariant.discountPercentage,
-        matchingVariant.discountAmount,
-        product.discountType,
-        product.discountPercentage,
-        product.discountAmount,
-      )
+      matchingVariant.price,
+      product.price,
+      matchingVariant.discountType,
+      matchingVariant.discountPercentage,
+      matchingVariant.discountAmount,
+      product.discountType,
+      product.discountPercentage,
+      product.discountAmount,
+    )
     : product.discountedPrice;
   const originalPrice = matchingVariant?.price || product.price;
   const hasDiscount = finalPrice < originalPrice;
@@ -171,7 +171,7 @@ export default function ProductShortcode({
             {product.name}
           </h3>
           <div className="flex items-center gap-3">
-            <span className="text-2xl sm:text-3xl font-bold text-red-600">
+            <span className="text-2xl sm:text-3xl font-bold text-destructive">
               {getCurrencySymbol()}{finalPrice.toLocaleString()}
             </span>
             {hasDiscount && (
@@ -256,8 +256,8 @@ export default function ProductShortcode({
               className={cn(
                 "p-3 rounded-md text-sm",
                 toastMessage.type === "success"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800",
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "bg-destructive/10 text-destructive border-destructive/20",
               )}
             >
               {toastMessage.msg}

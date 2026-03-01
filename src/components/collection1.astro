@@ -39,10 +39,10 @@ const showCategoryPills = categories.length > 1;
       class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-3 md:mb-5"
     >
       <div class="space-y-1">
-        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+        <h2 class="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
           {title}
         </h2>
-        {subtitle && <p class="text-gray-500 text-xs max-w-xl line-clamp-1">{subtitle}</p>}
+        {subtitle && <p class="text-muted-foreground text-xs max-w-xl line-clamp-1">{subtitle}</p>}
       </div>
 
       <div class="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -52,7 +52,7 @@ const showCategoryPills = categories.length > 1;
             categories.map((cat) => (
               <a
                 href={`/categories/${cat.slug}`}
-                class="text-sm font-medium text-gray-600 hover:text-primary px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                class="text-sm font-medium text-muted-foreground hover:text-primary px-3 py-1.5 rounded-full bg-muted hover:bg-accent transition-colors"
               >
                 {cat.name}
               </a>
@@ -87,7 +87,7 @@ const showCategoryPills = categories.length > 1;
         <div class="mt-4 flex justify-center sm:hidden">
           <a
             href={`/categories/${categories[0].slug}`}
-            class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+            class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-foreground bg-muted hover:bg-accent rounded-full transition-colors"
           >
             View All Products
             <ArrowRight className="h-4 w-4" />

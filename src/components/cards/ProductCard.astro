@@ -27,10 +27,10 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
 ---
 
 <div
-  class="group relative flex flex-col h-full bg-white rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-gray-100/50 hover:border-transparent"
+  class="group relative flex flex-col h-full bg-card rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-border/50 hover:border-transparent"
 >
   <!-- Image Container -->
-  <div class="relative aspect-[4/5] overflow-hidden bg-[#F9FAFB]">
+  <div class="relative aspect-[4/5] overflow-hidden bg-muted">
     <a
       href={`/products/${product.slug}`}
       class="block w-full h-full"
@@ -49,7 +49,7 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
     <div class="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
       {
         discountBadge && (
-          <span class="px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase text-white bg-red-500 rounded-full shadow-sm">
+          <span class="px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase text-destructive-foreground bg-destructive rounded-full shadow-sm">
             {discountBadge}
           </span>
         )
@@ -62,7 +62,7 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
     >
       <a
         href={`/products/${product.slug}`}
-        class="w-full h-11 flex items-center justify-center gap-2 bg-black text-white text-sm font-semibold rounded-xl shadow-xl hover:bg-gray-900 transition-colors"
+        class="w-full h-11 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-semibold rounded-xl shadow-xl hover:bg-primary/90 transition-colors"
       >
         <span>View Details</span>
         <ArrowRight className="h-4 w-4" />
@@ -74,7 +74,7 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
   <div class="p-3 sm:p-4 flex flex-col flex-1">
     <div class="mb-1">
       <h3
-        class="text-[14px] sm:text-[15px] font-semibold text-gray-900 leading-tight line-clamp-2 min-h-[2.25rem] group-hover:text-primary transition-colors duration-300"
+        class="text-[14px] sm:text-[15px] font-semibold text-foreground leading-tight line-clamp-2 min-h-[2.25rem] group-hover:text-primary transition-colors duration-300"
       >
         <a href={`/products/${product.slug}`}>
           {product.name}
@@ -86,12 +86,12 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
       <div class="flex flex-col gap-0">
         {
           hasDiscount && (
-            <span class="text-[10px] sm:text-xs text-gray-400 line-through font-medium leading-none">
+            <span class="text-[10px] sm:text-xs text-muted-foreground line-through font-medium leading-none">
               {currencySymbol}{product.price.toLocaleString()}
             </span>
           )
         }
-        <span class="text-base sm:text-lg font-extrabold text-gray-900 tracking-tight leading-tight">
+        <span class="text-base sm:text-lg font-extrabold text-foreground tracking-tight leading-tight">
           {currencySymbol}{product.discountedPrice.toLocaleString()}
         </span>
       </div>
@@ -99,7 +99,7 @@ const productImageUrl = getOptimizedImageUrl(product.imageUrl, {
       <!-- Mobile Action -->
       <a
         href={`/products/${product.slug}`}
-        class="lg:hidden h-8 w-8 flex items-center justify-center rounded-xl bg-gray-50 text-gray-900 active:scale-90 transition-all border border-gray-100"
+        class="lg:hidden h-8 w-8 flex items-center justify-center rounded-xl bg-muted text-foreground active:scale-90 transition-all border border-border"
         aria-label="View product"
       >
         <ArrowRight className="h-3.5 w-3.5" />

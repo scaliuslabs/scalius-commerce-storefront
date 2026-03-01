@@ -197,7 +197,7 @@ const analyticsProductData = products.map((p) => ({
           <span>Filters</span>
           {
             activeFilterCount > 0 && (
-              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              <span class="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )
@@ -282,7 +282,7 @@ const analyticsProductData = products.map((p) => ({
 
           {
             error && (
-              <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+              <div class="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-lg mb-6">
                 {error}
               </div>
             )

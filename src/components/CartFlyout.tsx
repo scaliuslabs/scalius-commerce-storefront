@@ -167,7 +167,7 @@ export default function CartFlyout() {
       <SheetContent
         side="right"
         className={cn(
-          "flex flex-col p-0 bg-white shadow-2xl gap-0 transition-transform duration-300 ease-out border-none focus:outline-none z-100",
+          "flex flex-col p-0 bg-card shadow-2xl gap-0 transition-transform duration-300 ease-out border-none focus:outline-none z-100",
           // Mobile: Bottom Half Sheet
           "fixed inset-x-0 bottom-0 h-auto max-h-[55dvh] top-auto rounded-t-[20px] border-t-0",
           // Desktop: Side Sheet
@@ -181,41 +181,41 @@ export default function CartFlyout() {
           Visible drag handle with animation to suggest pulling down
         */}
         <div
-          className="w-full flex flex-col items-center justify-center pt-2 pb-0 sm:hidden cursor-grab active:cursor-grabbing touch-none z-30 bg-white rounded-t-[20px]"
+          className="w-full flex flex-col items-center justify-center pt-2 pb-0 sm:hidden cursor-grab active:cursor-grabbing touch-none z-30 bg-card rounded-t-[20px]"
           onTouchStart={handleDragStart}
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
         >
-          <div className="w-8 h-1 rounded-full bg-gray-300" />
-          <ChevronDown className="w-3 h-3 text-gray-400 animate-bounce mt-0.5 opacity-60" />
+          <div className="w-8 h-1 rounded-full bg-muted-foreground/30" />
+          <ChevronDown className="w-3 h-3 text-muted-foreground animate-bounce mt-0.5 opacity-60" />
         </div>
 
         {/* 1. HEADER */}
         <div
           className={cn(
-            "flex items-center justify-between px-4 pb-2 pt-0 sm:pt-4 sm:px-5 sm:pb-4 border-b border-gray-100 bg-white shrink-0 z-20 h-auto shadow-[0_1px_2px_rgba(0,0,0,0.01)]",
+            "flex items-center justify-between px-4 pb-2 pt-0 sm:pt-4 sm:px-5 sm:pb-4 border-b border-border bg-card shrink-0 z-20 h-auto shadow-[0_1px_2px_rgba(0,0,0,0.03)]",
           )}
           onTouchStart={handleDragStart}
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
         >
           <div className="flex items-center gap-2">
-            <SheetTitle className="text-[15px] sm:text-lg font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <SheetTitle className="text-[15px] sm:text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
               Cart
-              <span className="bg-black text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full leading-none min-w-[18px] text-center">
+              <span className="bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full leading-none min-w-[18px] text-center">
                 {cart.totalItems}
               </span>
             </SheetTitle>
           </div>
 
-          <SheetClose className="group p-1.5 -mr-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-black transition-all active:scale-90 focus:outline-none cursor-pointer">
+          <SheetClose className="group p-1.5 -mr-1.5 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-90 focus:outline-none cursor-pointer">
             <X className="h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:rotate-90" />
             <span className="sr-only">Close</span>
           </SheetClose>
         </div>
 
         {/* 2. CONTENT */}
-        <div className="flex-1 relative overflow-hidden flex flex-col bg-gray-50">
+        <div className="flex-1 relative overflow-hidden flex flex-col bg-muted/50">
           <div
             ref={scrollRef}
             onScroll={checkScroll}
@@ -223,11 +223,11 @@ export default function CartFlyout() {
           >
             {cart.totalItems === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-8 sm:py-12 text-center space-y-3">
-                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-white rounded-full flex items-center justify-center border border-gray-100 shadow-sm">
-                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-gray-300" />
+                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-card rounded-full flex items-center justify-center border border-border shadow-sm">
+                  <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="text-sm font-bold text-gray-900">
+                  <h3 className="text-sm font-bold text-foreground">
                     Cart is empty
                   </h3>
                 </div>
@@ -235,7 +235,7 @@ export default function CartFlyout() {
                   onClick={() => setCartOpen(false)}
                   variant="default"
                   size="sm"
-                  className="h-7 px-4 text-[10px] sm:text-xs font-bold rounded-full mt-1 bg-black text-white hover:bg-gray-800 cursor-pointer"
+                  className="h-7 px-4 text-[10px] sm:text-xs font-bold rounded-full mt-1 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
                 >
                   Start Shopping
                 </Button>
@@ -246,10 +246,10 @@ export default function CartFlyout() {
                 {Object.entries(cart.items).map(([key, item]) => (
                   <div
                     key={key}
-                    className="group relative flex gap-2.5 sm:gap-3 bg-white p-2 sm:p-2.5 rounded-xl border border-gray-100 shadow-sm"
+                    className="group relative flex gap-2.5 sm:gap-3 bg-card p-2 sm:p-2.5 rounded-xl border border-border shadow-sm"
                   >
                     {/* Compact Image */}
-                    <div className="h-12 w-12 sm:h-18 sm:w-18shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+                    <div className="h-12 w-12 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
                       <img
                         src={item.image || "/placeholder.jpg"}
                         alt={item.name}
@@ -261,10 +261,10 @@ export default function CartFlyout() {
                     <div className="flex flex-1 flex-col min-w-0 justify-between py-0">
                       <div className="flex justify-between items-start gap-1.5">
                         <div className="space-y-0.5 min-w-0 flex-1">
-                          <h3 className="text-[12px] sm:text-[13.5px] font-bold text-gray-900 leading-tight truncate pr-1">
+                          <h3 className="text-[12px] sm:text-[13.5px] font-bold text-foreground leading-tight truncate pr-1">
                             <a
                               href={`/products/${item.slug || item.id}`}
-                              className="hover:text-gray-600 transition-colors"
+                              className="hover:text-muted-foreground transition-colors"
                             >
                               {item.name}
                             </a>
@@ -272,10 +272,10 @@ export default function CartFlyout() {
 
                           {/* Separator Based Variants - UPDATED: Dots are now darker (bg-gray-400) */}
                           {(item.size || item.color) && (
-                            <div className="flex items-center text-[10px] sm:text-[11px] font-medium text-gray-500 leading-none">
+                            <div className="flex items-center text-[10px] sm:text-[11px] font-medium text-muted-foreground leading-none">
                               {item.size && <span>{item.size}</span>}
                               {item.size && item.color && (
-                                <span className="mx-1.5 h-1 w-1 rounded-full bg-gray-400 shrink-0" />
+                                <span className="mx-1.5 h-1 w-1 rounded-full bg-muted-foreground shrink-0" />
                               )}
                               {item.color && <span>{item.color}</span>}
                             </div>
@@ -283,14 +283,14 @@ export default function CartFlyout() {
                         </div>
 
                         {/* Price */}
-                        <div className="text-[12px] sm:text-sm font-bold text-gray-900 tabular-nums text-right shrink-0">
+                        <div className="text-[12px] sm:text-sm font-bold text-foreground tabular-nums text-right shrink-0">
                           {getCurrencySymbol()}{(item.price * item.quantity).toLocaleString()}
                         </div>
                       </div>
 
                       {/* Controls Row - Tighter on mobile */}
                       <div className="flex items-end justify-between mt-1">
-                        <div className="flex items-center border border-gray-200 rounded-md bg-gray-50/50 h-6 sm:h-7 overflow-hidden">
+                        <div className="flex items-center border border-input rounded-md bg-muted/50 h-6 sm:h-7 overflow-hidden">
                           <button
                             onClick={() => {
                               disableAutoClose();
@@ -300,11 +300,11 @@ export default function CartFlyout() {
                               else
                                 updateQuantity(item.id, item.variantId, newQ);
                             }}
-                            className="w-6 sm:w-8 h-full flex items-center justify-center text-gray-500 hover:text-black hover:bg-white transition-colors active:bg-gray-100 cursor-pointer"
+                            className="w-6 sm:w-8 h-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors active:bg-muted cursor-pointer"
                           >
                             <Minus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           </button>
-                          <span className="w-5 sm:w-6 text-center text-[11px] sm:text-[12px] font-bold text-gray-900 tabular-nums h-full flex items-center justify-center leading-none">
+                          <span className="w-5 sm:w-6 text-center text-[11px] sm:text-[12px] font-bold text-foreground tabular-nums h-full flex items-center justify-center leading-none">
                             {item.quantity}
                           </span>
                           <button
@@ -316,7 +316,7 @@ export default function CartFlyout() {
                                 item.quantity + 1,
                               );
                             }}
-                            className="w-6 sm:w-8 h-full flex items-center justify-center text-gray-500 hover:text-black hover:bg-white transition-colors active:bg-gray-100 cursor-pointer"
+                            className="w-6 sm:w-8 h-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors active:bg-muted cursor-pointer"
                           >
                             <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           </button>
@@ -327,7 +327,7 @@ export default function CartFlyout() {
                             disableAutoClose();
                             removeFromCart(item.id, item.variantId);
                           }}
-                          className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors active:scale-90 cursor-pointer"
+                          className="text-muted-foreground hover:text-destructive p-1 rounded-md hover:bg-destructive/10 transition-colors active:scale-90 cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -342,11 +342,11 @@ export default function CartFlyout() {
           {/* More Below Indicator */}
           <div
             className={cn(
-              "absolute bottom-0 left-0 right-0 h-10 bg-linear-to-t from-gray-50 to-transparent pointer-events-none transition-opacity duration-300 flex items-end justify-center pb-1",
+              "absolute bottom-0 left-0 right-0 h-10 bg-linear-to-t from-muted/80 to-transparent pointer-events-none transition-opacity duration-300 flex items-end justify-center pb-1",
               canScrollMore ? "opacity-100" : "opacity-0",
             )}
           >
-            <div className="bg-white/90 backdrop-blur text-gray-500 text-[9px] border border-gray-100 font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 animate-bounce">
+            <div className="bg-card/90 backdrop-blur text-muted-foreground text-[9px] border border-border font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 animate-bounce">
               More <ChevronDown className="h-2.5 w-2.5" />
             </div>
           </div>
@@ -354,14 +354,14 @@ export default function CartFlyout() {
 
         {/* 3. FOOTER */}
         {cart.totalItems > 0 && (
-          <div className="border-t border-gray-200 bg-white p-2 sm:p-5 shrink-0 z-30 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.03)] safe-area-pb">
+          <div className="border-t border-border bg-card p-2 sm:p-5 shrink-0 z-30 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.05)] safe-area-pb">
             {/* Desktop Footer */}
             <div className="hidden sm:block space-y-4">
               <div className="flex justify-between items-end">
-                <div className="text-xs text-gray-500 font-medium">
+                <div className="text-xs text-muted-foreground font-medium">
                   Subtotal (excl. shipping)
                 </div>
-                <div className="text-xl font-bold text-gray-900 tabular-nums tracking-tight">
+                <div className="text-xl font-bold text-foreground tabular-nums tracking-tight">
                   {getCurrencySymbol()}{cart.totalAmount.toLocaleString()}
                 </div>
               </div>
@@ -370,7 +370,7 @@ export default function CartFlyout() {
                   disableAutoClose();
                   handleCheckout();
                 }}
-                className="w-full h-11 rounded-xl text-[14px] font-bold bg-black hover:bg-gray-900 text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-11 rounded-xl text-[14px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Checkout</span>
                 <ArrowRight className="h-4 w-4" />
@@ -378,7 +378,7 @@ export default function CartFlyout() {
               <div className="flex justify-between items-center px-1">
                 <button
                   onClick={() => setCartOpen(false)}
-                  className="text-[11px] font-medium text-gray-500 hover:text-gray-900 underline decoration-gray-200 underline-offset-2 cursor-pointer"
+                  className="text-[11px] font-medium text-muted-foreground hover:text-foreground underline decoration-border underline-offset-2 cursor-pointer"
                 >
                   Continue Shopping
                 </button>
@@ -388,7 +388,7 @@ export default function CartFlyout() {
                     clearCart();
                     setCartOpen(false);
                   }}
-                  className="text-[11px] font-medium text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                  className="text-[11px] font-medium text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
                 >
                   Clear Cart
                 </button>
@@ -400,7 +400,7 @@ export default function CartFlyout() {
               {/* Left: Total */}
               <div className="flex flex-col justify-center min-w-0">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-[9px] text-gray-500 font-bold uppercase">
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase">
                     Total
                   </span>
                   <button
@@ -409,12 +409,12 @@ export default function CartFlyout() {
                       clearCart();
                       setCartOpen(false);
                     }}
-                    className="text-[9px] text-gray-300 underline decoration-dotted hover:text-red-500 cursor-pointer"
+                    className="text-[9px] text-muted-foreground underline decoration-dotted hover:text-destructive cursor-pointer"
                   >
                     Clear
                   </button>
                 </div>
-                <div className="text-lg font-extrabold text-gray-900 tabular-nums leading-none">
+                <div className="text-lg font-extrabold text-foreground tabular-nums leading-none">
                   {getCurrencySymbol()}{cart.totalAmount.toLocaleString()}
                 </div>
               </div>
@@ -425,7 +425,7 @@ export default function CartFlyout() {
                   disableAutoClose();
                   handleCheckout();
                 }}
-                className="flex-1 h-9 rounded-full text-[12px] font-bold bg-black text-white shadow-sm active:scale-[0.97] flex items-center justify-center gap-2 ml-auto cursor-pointer"
+                className="flex-1 h-9 rounded-full text-[12px] font-bold bg-primary text-primary-foreground shadow-sm active:scale-[0.97] flex items-center justify-center gap-2 ml-auto cursor-pointer"
               >
                 <span>Checkout</span>
                 <ArrowRight className="h-3 w-3" />

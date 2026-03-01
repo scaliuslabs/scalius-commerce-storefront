@@ -360,10 +360,10 @@ export default function CommandPalette() {
                           }
                           id={`cmd-item-${activeIdx}`}
                         >
-                          <div className="h-8 w-8 rounded bg-blue-50 flex items-center justify-center mr-3 shrink-0 text-blue-600">
+                          <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center mr-3 shrink-0 text-primary">
                             <Layers className="h-4 w-4" />
                           </div>
-                          <span className="font-medium text-gray-700 text-sm">
+                          <span className="font-medium text-foreground text-sm">
                             {c.name}
                           </span>
                         </ResultRow>
@@ -431,7 +431,7 @@ function ResultRow({
       onClick={onClick}
       className={cn(
         "flex items-center px-4 py-3 cursor-pointer transition-all duration-150 border-b border-gray-50 sm:border-none sm:rounded-lg sm:mx-2",
-        active ? "bg-gray-50 sm:bg-gray-100" : "bg-white hover:bg-gray-50",
+        active ? "bg-muted" : "bg-white hover:bg-muted/50",
       )}
     >
       {children}

@@ -242,18 +242,18 @@ export default function AuthModal() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+        className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-2xl animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
             {step === "authenticated" ? "Welcome back" : "Sign In"}
           </h2>
           <button
             onClick={() => setIsOpen(false)}
-            className="rounded-full p-1.5 text-gray-500 hover:bg-gray-100 transition-colors"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -262,23 +262,23 @@ export default function AuthModal() {
         {/* State: Authenticated */}
         {step === "authenticated" && customer && (
           <div className="space-y-6">
-            <div className="flex flex-col items-center justify-center p-6 bg-green-50 rounded-lg border border-green-100">
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-3">
-                <User className="h-6 w-6 text-green-600" />
+            <div className="flex flex-col items-center justify-center p-6 bg-primary/5 rounded-lg border border-primary/10">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <User className="h-6 w-6 text-primary" />
               </div>
-              <p className="font-medium text-gray-900">{customer.name}</p>
-              <p className="text-sm text-gray-500 mt-1">{customer.phone || customer.email}</p>
+              <p className="font-medium text-foreground">{customer.name}</p>
+              <p className="text-sm text-muted-foreground mt-1">{customer.phone || customer.email}</p>
             </div>
             <div className="flex gap-3">
               <a
                 href="/account"
-                className="flex-1 flex justify-center items-center h-10 rounded-lg border border-gray-200 bg-white text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 flex justify-center items-center h-10 rounded-lg border border-border bg-background text-sm font-medium hover:bg-muted transition-colors"
               >
                 Go to Dashboard
               </a>
               <button
                 onClick={handleLogout}
-                className="flex-1 h-10 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+                className="flex-1 h-10 rounded-lg bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-colors"
               >
                 Sign out
               </button>
@@ -289,20 +289,20 @@ export default function AuthModal() {
         {/* State: Method Selection or Input */}
         {step === "input" && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Access your orders, track shipments, and checkout faster.
             </p>
 
             {(allowedMethods === "both" || allowedMethods === "email_phone_mandatory") && (
-              <div className="flex rounded-lg border border-gray-200 p-1 mb-4 bg-gray-50">
+              <div className="flex rounded-lg border border-border p-1 mb-4 bg-muted/50">
                 <button
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "email" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "email" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   onClick={() => { setMethod("email"); setError(""); setIdentifier(""); setPhoneInput(""); }}
                 >
                   <Mail className="h-4 w-4" /> Email
                 </button>
                 <button
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "phone" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${method === "phone" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   onClick={() => { setMethod("phone"); setError(""); setIdentifier(""); setPhoneInput(""); }}
                 >
                   <Smartphone className="h-4 w-4" /> WhatsApp
@@ -311,7 +311,7 @@ export default function AuthModal() {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-foreground">
                 {method === "email" ? "Email address" : (allowedMethods === "sms_otp" ? "Phone Number" : "WhatsApp Number")}
               </label>
               <input
@@ -320,28 +320,28 @@ export default function AuthModal() {
                 onChange={(e) => { setIdentifier(e.target.value); setError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                 placeholder={method === "email" ? "you@example.com" : "+8801700000000"}
-                className="w-full h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-all"
+                className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring transition-all"
                 autoFocus
               />
             </div>
 
             {method === "email" && (
               <div className="space-y-1.5 mt-2">
-                <label className="text-sm font-medium text-gray-700">Phone Number (Required)</label>
+                <label className="text-sm font-medium text-foreground">Phone Number (Required)</label>
                 <input
                   type="tel"
                   value={phoneInput}
                   onChange={(e) => { setPhoneInput(e.target.value); setError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                   placeholder="+8801700000000"
-                  className="w-full h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-all"
+                  className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring transition-all"
                 />
               </div>
             )}
 
             {method === "phone" && (
               <div className="space-y-1.5 mt-2">
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-foreground">
                   {allowedMethods === "email_phone_mandatory" ? "Email Address (Required)" : "Email Address (Optional)"}
                 </label>
                 <input
@@ -350,17 +350,17 @@ export default function AuthModal() {
                   onChange={(e) => { setPhoneInput(e.target.value); setError(""); }}
                   onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
                   placeholder="you@example.com"
-                  className="w-full h-11 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-all"
+                  className="w-full h-11 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring transition-all"
                 />
               </div>
             )}
 
-            {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
+            {error && <p className="text-xs text-destructive font-medium">{error}</p>}
 
             <button
               onClick={handleSendOtp}
               disabled={loading || !identifier.trim()}
-              className="w-full h-11 rounded-lg bg-gray-900 text-white text-sm font-medium disabled:opacity-50 hover:bg-gray-800 transition-colors mt-2"
+              className="w-full h-11 rounded-lg bg-foreground text-background text-sm font-medium disabled:opacity-50 hover:bg-foreground/90 transition-colors mt-2"
             >
               {loading ? "Please wait..." : "Continue"}
             </button>
@@ -371,13 +371,13 @@ export default function AuthModal() {
         {step === "otp" && (
           <div className="space-y-5">
             <div className="text-center space-y-2">
-              <div className="mx-auto w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-4">
-                {method === "email" ? <Mail className="h-6 w-6 text-blue-600" /> : <Smartphone className="h-6 w-6 text-green-600" />}
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                {method === "email" ? <Mail className="h-6 w-6 text-primary" /> : <Smartphone className="h-6 w-6 text-primary" />}
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 We've sent a 6-digit code to
               </p>
-              <p className="font-semibold text-gray-900">{identifier}</p>
+              <p className="font-semibold text-foreground">{identifier}</p>
             </div>
 
             <div className="space-y-2">
@@ -391,16 +391,16 @@ export default function AuthModal() {
                 onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "")); setError(""); }}
                 onKeyDown={(e) => e.key === "Enter" && handleVerifyOtp()}
                 placeholder="• • • • • •"
-                className="w-full h-12 text-center text-lg tracking-[0.5em] rounded-lg border border-gray-300 bg-white px-3 font-mono focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 transition-all"
+                className="w-full h-12 text-center text-lg tracking-[0.5em] rounded-lg border border-input bg-background px-3 font-mono focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring transition-all"
               />
             </div>
 
-            {error && <p className="text-xs text-center text-red-500 font-medium">{error}</p>}
+            {error && <p className="text-xs text-center text-destructive font-medium">{error}</p>}
 
             <button
               onClick={handleVerifyOtp}
               disabled={loading || otp.length !== 6}
-              className="w-full h-11 rounded-lg bg-gray-900 text-white text-sm font-medium disabled:opacity-50 hover:bg-gray-800 transition-colors"
+              className="w-full h-11 rounded-lg bg-foreground text-background text-sm font-medium disabled:opacity-50 hover:bg-foreground/90 transition-colors"
             >
               {loading ? "Verifying..." : "Verify Code"}
             </button>
@@ -408,17 +408,17 @@ export default function AuthModal() {
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => { setStep("input"); setOtp(""); setError(""); }}
-                className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Change {method}
               </button>
 
               {countdown > 0 ? (
-                <span className="text-xs text-gray-400">Resend code in {countdown}s</span>
+                <span className="text-xs text-muted-foreground">Resend code in {countdown}s</span>
               ) : (
                 <button
                   onClick={handleSendOtp}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
                 >
                   Resend code
                 </button>
@@ -431,43 +431,43 @@ export default function AuthModal() {
         {step === "profile_setup" && (
           <div className="space-y-4">
             <div className="text-center space-y-2 mb-2">
-              <div className="mx-auto w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-2">
-                <User className="h-6 w-6 text-blue-600" />
+              <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                <User className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Complete your profile</h3>
-              <p className="text-sm text-gray-600">Please provide your delivery details.</p>
+              <h3 className="text-lg font-semibold text-foreground">Complete your profile</h3>
+              <p className="text-sm text-muted-foreground">Please provide your delivery details.</p>
             </div>
 
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-700">Full Name</label>
+                <label className="text-xs font-medium text-foreground">Full Name</label>
                 <input
                   type="text"
                   value={profileName}
                   onChange={(e) => { setProfileName(e.target.value); setError(""); }}
                   placeholder="John Doe"
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all"
+                  className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none transition-all"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-700">Full Address</label>
+                <label className="text-xs font-medium text-foreground">Full Address</label>
                 <input
                   type="text"
                   value={profileAddress}
                   onChange={(e) => { setProfileAddress(e.target.value); setError(""); }}
                   placeholder="Apt, Street, Building"
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all"
+                  className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-700">City</label>
+                  <label className="text-xs font-medium text-foreground">City</label>
                   <select
                     value={profileCity}
                     onChange={(e) => { setProfileCity(e.target.value); setError(""); }}
-                    className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all"
+                    className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none transition-all"
                   >
                     <option value="" disabled>Select City</option>
                     {cities.map((city) => (
@@ -476,12 +476,12 @@ export default function AuthModal() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-700">Zone</label>
+                  <label className="text-xs font-medium text-foreground">Zone</label>
                   <select
                     value={profileZone}
                     onChange={(e) => { setProfileZone(e.target.value); setError(""); }}
                     disabled={!profileCity || zones.length === 0}
-                    className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm focus:border-gray-900 focus:outline-none transition-all disabled:opacity-50 disabled:bg-gray-50"
+                    className="w-full h-10 rounded-lg border border-input bg-background px-3 text-sm focus:border-ring focus:outline-none transition-all disabled:opacity-50 disabled:bg-muted"
                   >
                     <option value="" disabled>Select Zone</option>
                     {zones.map((zone) => (
@@ -492,12 +492,12 @@ export default function AuthModal() {
               </div>
             </div>
 
-            {error && <p className="text-xs text-center text-red-500 font-medium pt-1">{error}</p>}
+            {error && <p className="text-xs text-center text-destructive font-medium pt-1">{error}</p>}
 
             <button
               onClick={handleProfileSubmit}
               disabled={loading || !profileName.trim() || !profileCity.trim() || !profileZone.trim()}
-              className="w-full h-11 rounded-lg bg-gray-900 text-white text-sm font-medium disabled:opacity-50 hover:bg-gray-800 transition-colors mt-2"
+              className="w-full h-11 rounded-lg bg-foreground text-background text-sm font-medium disabled:opacity-50 hover:bg-foreground/90 transition-colors mt-2"
             >
               {loading ? "Saving..." : "Save Delivery Details"}
             </button>

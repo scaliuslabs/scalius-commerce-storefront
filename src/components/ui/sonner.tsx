@@ -3,12 +3,12 @@ import { CheckCircle } from "lucide-react";
 
 interface ToasterProps {
   position?:
-    | "top-left"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-right"
-    | "top-center"
-    | "bottom-center";
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right"
+  | "top-center"
+  | "bottom-center";
   expand?: boolean;
   richColors?: boolean;
   closeButton?: boolean;
@@ -40,7 +40,9 @@ export function Toaster({
       offset={offset}
       duration={duration}
       icons={{
-        success: <CheckCircle className="h-5 w-5 text-green-600" />,
+        success: (
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></svg>
+        ),
       }}
       {...props}
     />
