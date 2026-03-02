@@ -166,7 +166,7 @@ export async function processOrder(formData: FormData) {
             }
           }
 
-          availableStock = variant.stock;
+          availableStock = variant.stock - (variant.reservedStock ?? 0);
         } else {
           throw new Error(
             `Selected variant for "${product.name}" is no longer available.`,
@@ -174,7 +174,7 @@ export async function processOrder(formData: FormData) {
         }
       } else {
         // If no variant is specified, stock is the sum of all available variants
-        availableStock = variants.reduce((sum, v) => sum + v.stock, 0);
+        availableStock = variants.reduce((sum, v) => sum + (v.stock - (v.reservedStock ?? 0)), 0);
       }
 
       if (availableStock < item.quantity) {

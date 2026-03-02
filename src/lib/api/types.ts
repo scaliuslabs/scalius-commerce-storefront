@@ -69,6 +69,7 @@ export interface ProductVariant {
   sku: string;
   price: number;
   stock: number;
+  reservedStock?: number;
   discountType: "percentage" | "flat" | null;
   discountPercentage: number | null;
   discountAmount: number | null;
