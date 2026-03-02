@@ -147,6 +147,14 @@ const layoutData = await getLayoutData();
 
           <!-- Orders list -->
           <div id="ordersList" class="space-y-4"></div>
+
+          <!-- Pagination / Show More -->
+          <div id="showMoreContainer" class="hidden mt-6 text-center">
+            <button id="showMoreBtn" class="inline-flex items-center gap-2 px-6 py-3 bg-muted hover:bg-accent text-foreground text-sm font-semibold rounded-xl transition-colors border border-border shadow-sm">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              <span id="showMoreText">Show More</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -288,7 +296,33 @@ const layoutData = await getLayoutData();
     if (orders.length === 0) {
       emptyOrders.classList.remove("hidden");
     } else {
-      ordersList.innerHTML = orders.map(renderOrder).join("");
+      // Client-side pagination: show ORDERS_PER_PAGE at a time
+      const ORDERS_PER_PAGE = 5;
+      let visibleCount = Math.min(ORDERS_PER_PAGE, orders.length);
+
+      function renderVisibleOrders() {
+        ordersList.innerHTML = orders.slice(0, visibleCount).map(renderOrder).join("");
+        
+        const showMoreContainer = document.getElementById("showMoreContainer")!;
+        const showMoreText = document.getElementById("showMoreText")!;
+        
+        if (visibleCount < orders.length) {
+          const remaining = orders.length - visibleCount;
+          showMoreText.textContent = `Show More (${remaining} remaining)`;
+          showMoreContainer.classList.remove("hidden");
+        } else {
+          showMoreContainer.classList.add("hidden");
+        }
+      }
+
+      renderVisibleOrders();
+
+      document.getElementById("showMoreBtn")?.addEventListener("click", () => {
+        visibleCount = Math.min(visibleCount + ORDERS_PER_PAGE, orders.length);
+        renderVisibleOrders();
+        // Scroll smoothly to show new orders
+        ordersList.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
     }
 
     // Show auth state

@@ -95,7 +95,7 @@ const currencyCode = layoutData?.currency?.code ?? "BDT";
             <span class="text-gray-600">Order Status:</span>
             <span
               class="font-medium capitalize bg-primary/20 text-primary px-2 py-0.5 rounded-full text-sm"
-              >{order.status}</span
+              >{order.status === "incomplete" ? "Processing" : order.status}</span
             >
           </div>
           <div class="flex justify-between">
