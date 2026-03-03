@@ -22,22 +22,51 @@ export async function createOrder(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       },
-      2,
-      15000, // Longer timeout for order creation
-      true, // Requires authentication
+      0, // Do not retry the actual creation to prevent double ingestion
+      15000,
+      true,
     );
 
-    const data: ApiResponse<{ id: string }> = await response.json();
+    const data: any = await response.json();
 
     if (!response.ok || !data.success) {
-      console.error(
-        "Failed to create order:",
-        data.error || response.statusText,
-      );
-      return { success: false, error: data.error };
+      const errorMsg = typeof data.error === 'string'
+        ? data.error
+        : (data.error as any)?.message || (data.details as string) || (data.message as string) || "Order creation failed";
+
+      console.error("Failed to create order:", errorMsg);
+      return { success: false, error: errorMsg };
     }
 
-    return { success: true, orderId: data.data.id };
+    // Capture the 202 Async Accepted queue payload and poll for completion!
+    if (response.status === 202 && data.success && data.data?.checkoutToken) {
+      const checkoutToken = data.data.checkoutToken;
+      const initialOrderId = data.data.orderId;
+
+      let attempts = 0;
+      const maxAttempts = 30; // 30 * 1.5s = 45s max wait time
+
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const statusRes = await fetchWithRetry(createApiUrl(`/orders/status/${checkoutToken}`), {}, 2, 5000, true);
+
+        if (statusRes.ok) {
+          const statusData = await statusRes.json() as Record<string, any>;
+          if (statusData.status === "completed") {
+            return { success: true, orderId: statusData.orderId || initialOrderId };
+          } else if (statusData.status === "failed") {
+            return { success: false, error: statusData.error || "Order ingestion failed during high traffic. Please try again." };
+          }
+        }
+        attempts++;
+      }
+
+      return { success: false, error: "Order processing timed out. Please check your order history." };
+    }
+
+    // Normal synchronous return
+    return { success: true, orderId: data.data?.id || data.data?.orderId };
   } catch (error) {
     console.error("Error creating order:", error);
     return {
