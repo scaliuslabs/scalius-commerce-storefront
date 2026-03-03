@@ -5,7 +5,7 @@ import { createApiUrl, fetchWithRetry } from "./client";
 import { withEdgeCache, CACHE_TTL } from "@/lib/edge-cache";
 
 export interface GatewayConfig {
-  id: "stripe" | "sslcommerz" | "cod";
+  id: "stripe" | "sslcommerz" | "polar" | "cod";
   name: string;
   publishableKey?: string;   // Stripe only
   currencies?: string[];
