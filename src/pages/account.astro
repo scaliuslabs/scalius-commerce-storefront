@@ -240,6 +240,8 @@ const layoutData = await getLayoutData();
              ${order.shippingCharge > 0 ? `<div class="w-full sm:w-64 flex justify-between text-muted-foreground text-xs"><span>Delivery Fee</span><span>${formatCurrency(order.shippingCharge)}</span></div>` : ""}
              ${(order.discountAmount ?? 0) > 0 ? `<div class="w-full sm:w-64 flex justify-between text-primary text-xs"><span>Discount</span><span>-${formatCurrency(order.discountAmount!)}</span></div>` : ""}
              <div class="w-full sm:w-64 flex justify-between font-bold text-foreground mt-1 pt-1 border-t border-border"><span>Order Total</span><span>${formatCurrency(order.totalAmount)}</span></div>
+             ${(order.paidAmount ?? 0) > 0 ? `<div class="w-full sm:w-64 flex justify-between font-bold text-emerald-600 mt-1 pt-1 border-t border-border"><span>Paid Amount</span><span>${formatCurrency(order.paidAmount)}</span></div>` : ""}
+             ${(order.totalAmount - (order.paidAmount || 0)) > 0 ? `<div class="w-full sm:w-64 flex justify-between font-bold text-destructive mt-1 pt-0.5"><span>Due Amount</span><span>${formatCurrency(order.totalAmount - (order.paidAmount || 0))}</span></div>` : ""}
              ${order.shippingAddress ? `<div class="w-full text-left mt-2 text-[11px] text-muted-foreground"><span class="font-semibold text-foreground">Shipped to:</span> ${order.shippingAddress}${order.cityName ? `, ${order.cityName}` : ""}${order.zoneName ? `, ${order.zoneName}` : ""}</div>` : ""}
            </div>
         </div>

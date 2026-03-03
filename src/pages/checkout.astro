@@ -200,11 +200,11 @@ const GATEWAY_META = {
     desc: "Pay when your order arrives" 
   },
   polar: { 
-    label: "Global Digital Payment (Polar)", 
+    label: "Global Digital Payment", 
     icon: `<svg class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
     </svg>`, 
-    desc: "Pay securely with Polar" 
+    desc: "Any Cards or Cash App" 
   },
 };
 
@@ -222,7 +222,7 @@ function renderGateways() {
     // Adjust label if partial payment is required
     let label = meta.label;
     if (checkoutConfig.partialPaymentEnabled && (gw.id === "stripe" || gw.id === "sslcommerz" || gw.id === "polar")) {
-      label = `Pay Advance via ${gw.name === "Online Payment" ? "Online" : gw.id === "polar" ? "Polar" : "Card"}`;
+      label = `Pay Advance via ${meta.label}`;
     }
     const card = document.createElement("div");
     card.className = "payment-method-card cursor-pointer rounded-xl border-2 border-input bg-card p-4 transition-all hover:border-primary/50 flex items-center gap-4";

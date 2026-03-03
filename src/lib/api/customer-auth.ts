@@ -121,6 +121,7 @@ export interface CustomerOrder {
   id: string;
   status: string;
   totalAmount: number;
+  paidAmount: number;
   shippingCharge: number;
   discountAmount: number | null;
   paymentStatus: string;
