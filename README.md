@@ -217,7 +217,7 @@ This storefront requires a running instance of the **Scalius Commerce Lite Backe
 The API client in `src/lib/api/` uses direct `fetch` calls via `createApiUrl` — it does **not** use the backend's generated SDK. It handles:
 
 - Fetching products, categories, collections, pages, layout data, and widgets
-- Customer auth (OTP-based), cart, checkout, and order creation
+- Customer auth (OTP-based), cart, checkout, and **asynchronous queue-based order creation (polling)**
 - Payment intents (Stripe, SSLCommerz) via server-side proxy routes
 - Discount validation, shipping locations, and analytics config
 
