@@ -332,6 +332,7 @@ async function createOrder(paymentMethod) {
     notes: checkoutData.notes || null,
     items,
     shippingCharge: parseFloat(checkoutData.shippingCharge || "0"),
+    shippingMethodId: checkoutData.shippingMethodId,
     discountAmount: parseFloat(checkoutData.discountAmount || "0") || null,
     discountCode: checkoutData.discountCodeHidden || undefined,
     paymentMethod,

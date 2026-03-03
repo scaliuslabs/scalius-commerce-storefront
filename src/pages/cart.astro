@@ -673,7 +673,9 @@ const submitLabel = codOnly
 
         // Capture the current shipping fee from the ShippingLocationSelector
         const shippingFee = (window as any).lastShippingEventDetail?.fee ?? 0;
+        const shippingMethodId = (window as any).lastShippingEventDetail?.id;
         checkoutData["shippingCharge"] = String(shippingFee);
+        if (shippingMethodId) checkoutData["shippingMethodId"] = shippingMethodId;
 
         try {
           sessionStorage.setItem("scalius_checkout_data", JSON.stringify(checkoutData));

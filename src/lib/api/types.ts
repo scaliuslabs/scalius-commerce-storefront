@@ -311,6 +311,7 @@ export interface CreateOrderPayload {
     price: number;
   }>;
   shippingCharge: number;
+  shippingMethodId?: string;
   discountAmount?: number | null;
   discountCode?: string | null;
   paymentMethod?: "cod" | "stripe" | "sslcommerz";
