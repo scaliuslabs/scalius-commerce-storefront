@@ -116,10 +116,10 @@ const discountBadgeText = formatDiscountBadge(
           <button
             type="button"
             id="quantity-minus"
-            class="inline-flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-l-md border border-input bg-background text-foreground hover:bg-muted hover:border-primary/50 active:bg-accent active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
+            class="inline-flex h-6 w-6 lg:h-8 lg:w-8 items-center justify-center rounded-l-md border border-input bg-background text-foreground hover:bg-muted hover:border-primary/50 active:bg-accent active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
             aria-label="Decrease quantity"
           >
-            <Minus className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+            <Minus className="h-3 w-3" />
           </button>
             <input
               type="number"
@@ -129,16 +129,16 @@ const discountBadgeText = formatDiscountBadge(
               max="99"
               value="1"
               aria-label="Product quantity"
-              class="h-7 w-10 lg:h-8 lg:w-12 border-y border-input text-center text-xs lg:text-sm font-medium text-foreground linear-gradient-to-r from-background to-transparent [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 tabular-nums"
+              class="h-6 w-10 lg:h-8 lg:w-12 border-y border-input text-center text-xs lg:text-sm font-medium text-foreground linear-gradient-to-r from-background to-transparent [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:outline-none focus:ring-2 focus:ring-primary/50 tabular-nums"
               onkeydown="return event.keyCode !== 69 && event.keyCode !== 189"
             />
           <button
             type="button"
             id="quantity-plus"
-            class="inline-flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-r-md border border-input bg-background text-foreground hover:bg-muted hover:border-primary/50 active:bg-accent active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
+            class="inline-flex h-6 w-6 lg:h-8 lg:w-8 items-center justify-center rounded-r-md border border-input bg-background text-foreground hover:bg-muted hover:border-primary/50 active:bg-accent active:scale-95 shadow-sm transition-all duration-150 cursor-pointer"
             aria-label="Increase quantity"
           >
-            <Plus className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
+            <Plus className="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -201,7 +201,7 @@ const discountBadgeText = formatDiscountBadge(
                     class="sr-only peer"
                   />
                   <div
-                    class="size-btn h-8 min-w-8 flex items-center justify-center rounded-md bg-background border-2 border-input px-2.5 text-xs font-medium text-foreground cursor-pointer hover:border-primary/60 hover:shadow-md active:scale-95 peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 transition-all duration-200 shadow-sm"
+                    class="size-btn h-7 min-w-8 flex items-center justify-center rounded-md bg-background border border-input px-2 text-xs font-medium text-foreground cursor-pointer hover:border-primary/60 hover:shadow-md active:scale-95 peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 transition-all duration-200 shadow-sm"
                     data-size={size}
                   >
                     {size}
@@ -229,7 +229,7 @@ const discountBadgeText = formatDiscountBadge(
                     class="sr-only peer"
                   />
                   <div
-                    class="color-btn h-8 min-w-8 flex items-center justify-center rounded-md bg-background border-2 border-input px-2.5 text-xs font-medium text-foreground cursor-pointer hover:border-primary/60 hover:shadow-md active:scale-95 peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 transition-all duration-200 shadow-sm"
+                    class="color-btn h-7 min-w-8 flex items-center justify-center rounded-md bg-background border border-input px-2 text-xs font-medium text-foreground cursor-pointer hover:border-primary/60 hover:shadow-md active:scale-95 peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 transition-all duration-200 shadow-sm"
                     data-color={color}
                   >
                     {color}
@@ -241,11 +241,11 @@ const discountBadgeText = formatDiscountBadge(
         )
       }
 
-      <div class="grid grid-cols-2 gap-3 pt-1">
+      <div class="grid grid-cols-2 gap-2 pt-1 lg:pt-3">
         <button
           type="button"
           data-action="add-to-cart"
-          class="flex items-center justify-center rounded-lg border-2 border-primary bg-primary/5 py-2.5 lg:py-3 text-sm font-medium text-primary shadow-sm hover:bg-primary/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:border-border disabled:hover:scale-100 cursor-pointer"
+          class="flex items-center justify-center rounded-lg border border-primary bg-primary/5 py-2 lg:py-2.5 text-sm font-medium text-primary shadow-sm hover:bg-primary/10 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:border-border disabled:hover:scale-100 cursor-pointer"
           aria-label="Add to cart"
         >
           <ShoppingCart className="mr-1.5 h-4 w-4" /> Add to Cart
@@ -253,7 +253,7 @@ const discountBadgeText = formatDiscountBadge(
         <button
           type="button"
           data-action="buy-now"
-          class="flex items-center justify-center rounded-lg border-2 border-primary bg-primary py-2.5 lg:py-3 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted disabled:border-border disabled:hover:scale-100 cursor-pointer"
+          class="flex items-center justify-center rounded-lg border border-primary bg-primary py-2 lg:py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted disabled:border-border disabled:hover:scale-100 cursor-pointer"
           aria-label="Buy now"
         >
           <Check className="mr-1.5 h-4 w-4" /> Buy Now

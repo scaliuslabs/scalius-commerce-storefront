@@ -151,21 +151,21 @@ const dropdownPanelClass =
       const containerWidth = this.navList.offsetWidth;
 
       // If width is 0, we can't calculate.
-      // But we should NOT leave it invisible if it's supposed to be visible.
-      // We'll return, but if it has width later, ResizeObserver will catch it.
       if (containerWidth === 0) return;
 
       this.moreItem.classList.remove("hidden");
       const moreButtonWidth = this.moreItem.offsetWidth || 80;
       this.moreItem.classList.add("hidden");
 
+      // OPTIMIZATION: Batch ALL DOM reads before any DOM writes to prevent Forced Reflow
+      const itemsWidths = this.originalItems.map(item => item.offsetWidth);
+
       let currentWidth = 0;
       const gap = 4; // gap-1 is 4px
       let overflowStartIndex = -1;
 
       for (let i = 0; i < this.originalItems.length; i++) {
-        const item = this.originalItems[i];
-        const itemWidth = item.offsetWidth;
+        const itemWidth = itemsWidths[i];
 
         // Check if adding this item exceeds container
         const isLast = i === this.originalItems.length - 1;
@@ -181,6 +181,7 @@ const dropdownPanelClass =
         currentWidth += itemWidth + gap;
       }
 
+      // DOM WRITES (No more offsetWidth layout reads after this point)
       if (overflowStartIndex !== -1) {
         this.moreItem.classList.remove("hidden");
         const itemsToMove = this.originalItems.slice(overflowStartIndex);

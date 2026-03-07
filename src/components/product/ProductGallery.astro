@@ -16,40 +16,31 @@ const desktopThumb = GALLERY_CONFIG.thumbnails.desktop;
 const mobileThumb = GALLERY_CONFIG.thumbnails.mobile;
 const hasMultipleImages = images.length > 1;
 
-const optimizedImages = await Promise.all(
-  images.map(async (img) => {
-    const thumb = await getImage({
-      src: img.url,
-      width: desktopThumb.imageSize,
-      height: desktopThumb.imageSize,
-      format: "avif",
-      quality: 80,
-    });
+/**
+ * Format image URL targeting the cloud directly instead of bouncing through the local astro/worker proxy.
+ * If the image is already on cloud.wrygo.com, instruct the edge to resize it directly.
+ * Standard format: https://cloud.wrygo.com/cdn-cgi/image/width=X,height=Y.../filename
+ */
+function getCloudOptimizedUrl(url: string, width: number, height: number, quality: number) {
+  if (!url) return '';
+  // Only intercept cloud URLs
+  if (url.includes('cloud.wrygo.com')) {
+    const isFullUrl = url.startsWith('http');
+    // Extract everything past the domain if it's a full URL
+    const relativePath = isFullUrl ? new URL(url).pathname : url;
+    return `https://cloud.wrygo.com/cdn-cgi/image/width=${width},height=${height},quality=${quality},format=avif,fit=cover${relativePath}`;
+  }
+  return url;
+}
 
-    const main = await getImage({
-      src: img.url,
-      width: 800,
-      height: 800,
-      format: "avif",
-      quality: 85,
-    });
-
-    const zoom = await getImage({
-      src: img.url,
-      width: 1400,
-      height: 1400,
-      format: "avif",
-      quality: 90,
-    });
-
-    return {
-      original: img,
-      thumbUrl: thumb.src,
-      mainUrl: main.src,
-      zoomUrl: zoom.src,
-    };
-  })
-);
+const optimizedImages = images.map((img) => {
+  return {
+    original: img,
+    thumbUrl: getCloudOptimizedUrl(img.url, desktopThumb.imageSize, desktopThumb.imageSize, 80),
+    mainUrl: getCloudOptimizedUrl(img.url, 600, 600, 85),
+    zoomUrl: getCloudOptimizedUrl(img.url, 1400, 1400, 85),
+  };
+});
 ---
 
 <div id="product-gallery" class="lg:col-span-7 xl:col-span-6 relative w-full group/gallery">
@@ -140,6 +131,7 @@ const optimizedImages = await Promise.all(
               height="600"
               class="h-full w-full object-contain object-center"
               loading="eager"
+              fetchpriority="high"
             />
             <div
               class="absolute bottom-3 right-3 bg-black/40 text-white p-2 text-xs font-medium rounded-full backdrop-blur-md opacity-0 group-hover/main:opacity-100 transition-opacity duration-300 pointer-events-none flex items-center gap-1"
@@ -435,20 +427,26 @@ const optimizedImages = await Promise.all(
     });
 
     const checkScroll = () => {
+      // BATCH READS
       const { scrollTop, scrollHeight, clientHeight } = container;
       const isScrollable = scrollHeight > clientHeight;
+      const showTop = scrollTop > 10;
+      const showBottom = isScrollable && Math.round(scrollTop + clientHeight) < scrollHeight - 10;
 
-      if (scrollTop > 10) {
-        topIndicator.classList.remove("opacity-0", "pointer-events-none");
-      } else {
-        topIndicator.classList.add("opacity-0", "pointer-events-none");
-      }
+      // DELAY WRITES to next animation frame to prevent Read-Write layout thrashing Reflows
+      requestAnimationFrame(() => {
+        if (showTop) {
+          topIndicator.classList.remove("opacity-0", "pointer-events-none");
+        } else {
+          topIndicator.classList.add("opacity-0", "pointer-events-none");
+        }
 
-      if (isScrollable && Math.round(scrollTop + clientHeight) < scrollHeight - 10) {
-        bottomIndicator.classList.remove("opacity-0", "pointer-events-none");
-      } else {
-        bottomIndicator.classList.add("opacity-0", "pointer-events-none");
-      }
+        if (showBottom) {
+          bottomIndicator.classList.remove("opacity-0", "pointer-events-none");
+        } else {
+          bottomIndicator.classList.add("opacity-0", "pointer-events-none");
+        }
+      });
     };
 
     container.addEventListener("scroll", checkScroll);

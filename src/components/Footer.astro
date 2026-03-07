@@ -1,7 +1,7 @@
 ---
 // src/components/Footer.astro
 // Footer component - receives data from Layout.astro
-import { Image } from "astro:assets";
+import { Image, getImage } from "astro:assets";
 import type {
   FooterData,
   FooterMenu,
@@ -22,7 +22,26 @@ const tagline = footerData?.tagline || "";
 const description = footerData?.description || "";
 const copyrightText = footerData?.copyrightText || "";
 const rawMenus: FooterMenu[] = footerData?.menus || [];
-const social: SocialLink[] = footerData?.social || [];
+const socialRaw: SocialLink[] = footerData?.social || [];
+
+const social = await Promise.all(
+  socialRaw.map(async (item) => {
+    if (item.iconUrl && !item.iconUrl.endsWith(".svg")) {
+      try {
+        const opt = await getImage({
+          src: item.iconUrl,
+          width: 56,
+          height: 56,
+          format: "avif",
+        });
+        return { ...item, optimizedIconUrl: opt.src };
+      } catch (e) {
+        return { ...item, optimizedIconUrl: item.iconUrl };
+      }
+    }
+    return { ...item, optimizedIconUrl: item.iconUrl };
+  })
+);
 
 /**
  * Convert flat menu structure to nested.
@@ -148,7 +167,7 @@ if (menuCount >= 4) menuGridCols = "grid-cols-2 lg:grid-cols-4";
         social.length > 0 && (
           <div class="lg:col-span-12 lg:hidden flex justify-center mt-8 w-full">
             <div class="flex items-center gap-4 flex-wrap">
-              {social.map((item: SocialLink) => {
+              {social.map((item: SocialLink & { optimizedIconUrl?: string | null }) => {
                 if (!item.url) return null;
                 const displayTitle = item.label || item.platform || "Social";
                 const href = item.url.startsWith("http")
@@ -164,9 +183,9 @@ if (menuCount >= 4) menuGridCols = "grid-cols-2 lg:grid-cols-4";
                     title={displayTitle}
                   >
                     <div class="relative p-2.5 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transform transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                      {item.iconUrl ? (
+                      {item.optimizedIconUrl ? (
                         <img
-                          src={item.iconUrl}
+                          src={item.optimizedIconUrl}
                           alt={displayTitle}
                           class="w-4 h-4 sm:w-5 sm:h-5 object-contain"
                           loading="lazy"
@@ -200,7 +219,7 @@ if (menuCount >= 4) menuGridCols = "grid-cols-2 lg:grid-cols-4";
         {
           social.length > 0 && (
             <div class="hidden lg:flex items-center gap-5 flex-wrap">
-              {social.map((item: SocialLink) => {
+              {social.map((item: SocialLink & { optimizedIconUrl?: string | null }) => {
                 if (!item.url) return null;
                 const displayTitle = item.label || item.platform || "Social";
                 const href = item.url.startsWith("http")
@@ -216,9 +235,9 @@ if (menuCount >= 4) menuGridCols = "grid-cols-2 lg:grid-cols-4";
                     title={displayTitle}
                   >
                     <div class="relative p-2.5 rounded-full bg-white/10 backdrop-blur-sm group-hover:bg-white/20 transform transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                      {item.iconUrl ? (
+                      {item.optimizedIconUrl ? (
                         <img
-                          src={item.iconUrl}
+                          src={item.optimizedIconUrl}
                           alt={displayTitle}
                           class="w-5 h-5 object-contain"
                           loading="lazy"

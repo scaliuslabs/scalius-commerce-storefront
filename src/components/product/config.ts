@@ -9,7 +9,7 @@ export const GALLERY_CONFIG = {
     desktop: {
       width: 96, // w-24 in Tailwind (6rem = 96px)
       height: 88, // Actual rendered height (80px image + padding/border)
-      imageSize: 80,
+      imageSize: 140,
       gap: 12, // gap-3 in Tailwind
       padding: 6, // p-1.5
       borderWidth: 1,
@@ -17,7 +17,7 @@ export const GALLERY_CONFIG = {
     mobile: {
       width: 76, // w-[4.75rem]
       height: 80, // Actual rendered height
-      imageSize: 76,
+      imageSize: 130,
       gap: 8, // gap-2
       padding: 4, // p-1
       borderWidth: 1,

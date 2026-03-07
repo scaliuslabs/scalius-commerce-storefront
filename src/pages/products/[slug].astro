@@ -60,6 +60,19 @@ const currencyCode = layoutData?.currency?.code ?? "BDT";
 ---
 
 <Layout title={pageTitle} description={pageDescription} layoutData={layoutData}>
+  <Fragment slot="head">
+    {images.length > 0 && (
+      <link 
+        rel="preload" 
+        as="image" 
+        href={images[0].url.includes('cloud.wrygo.com') 
+          ? `https://cloud.wrygo.com/cdn-cgi/image/width=600,height=600,quality=85,format=avif,fit=cover${new URL(images[0].url).pathname}` 
+          : images[0].url} 
+        fetchpriority="high" 
+      />
+    )}
+  </Fragment>
+
   <main
     class="min-h-screen bg-white product-container"
     id="product-container"
@@ -153,7 +166,7 @@ const currencyCode = layoutData?.currency?.code ?? "BDT";
   });
 </script>
 
-<style>
+<style is:inline>
   .product-container {
     scroll-behavior: smooth;
   }
