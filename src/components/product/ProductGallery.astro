@@ -38,6 +38,7 @@ const optimizedImages = images.map((img) => {
     original: img,
     thumbUrl: getCloudOptimizedUrl(img.url, desktopThumb.imageSize, desktopThumb.imageSize, 80),
     mainUrl: getCloudOptimizedUrl(img.url, 600, 600, 85),
+    mainMobileSmall: getCloudOptimizedUrl(img.url, 400, 400, 80),
     zoomUrl: getCloudOptimizedUrl(img.url, 1400, 1400, 85),
   };
 });
@@ -126,6 +127,8 @@ const optimizedImages = images.map((img) => {
             <img
               id="mobile-main-image"
               src={optimizedImages[0]?.mainUrl || "/img/no-image.webp"}
+              srcset={`${optimizedImages[0]?.mainMobileSmall || ''} 400w, ${optimizedImages[0]?.mainUrl || ''} 600w`}
+              sizes="(max-width: 640px) 400px, 600px"
               alt={product.name}
               width="600"
               height="600"

@@ -30,8 +30,8 @@ const social = await Promise.all(
       try {
         const opt = await getImage({
           src: item.iconUrl,
-          width: 56,
-          height: 56,
+          width: 20,
+          height: 20,
           format: "avif",
         });
         return { ...item, optimizedIconUrl: opt.src };
