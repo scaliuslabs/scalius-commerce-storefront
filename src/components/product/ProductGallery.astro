@@ -366,6 +366,8 @@ const optimizedImages = images.map((img) => {
          "mobile-main-image"
        ) as HTMLImageElement;
        if (mobileImg) {
+          mobileImg.removeAttribute('srcset');
+          mobileImg.removeAttribute('sizes');
           mobileImg.style.opacity = '0.5';
           mobileImg.src = url;
           mobileImg.onload = () => { mobileImg.style.opacity = '1'; };
@@ -382,7 +384,11 @@ const optimizedImages = images.map((img) => {
       if (!url) return;
 
       const mobileImg = document.getElementById("mobile-main-image") as HTMLImageElement;
-      if (mobileImg) mobileImg.src = url;
+      if (mobileImg) {
+        mobileImg.removeAttribute('srcset');
+        mobileImg.removeAttribute('sizes');
+        mobileImg.src = url;
+      }
 
       const fsImg = document.getElementById("fullscreen-image") as HTMLImageElement;
       if (fsImg) fsImg.src = url;

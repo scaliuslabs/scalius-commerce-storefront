@@ -100,7 +100,11 @@ function switchImage(url: string) {
 
   if (cache.mobileMainImage) {
     requestAnimationFrame(() => {
-      if (cache.mobileMainImage) cache.mobileMainImage.src = url;
+      if (cache.mobileMainImage) {
+        cache.mobileMainImage.removeAttribute('srcset');
+        cache.mobileMainImage.removeAttribute('sizes');
+        cache.mobileMainImage.src = url;
+      }
     });
   }
 
