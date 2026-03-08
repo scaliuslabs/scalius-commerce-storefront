@@ -119,7 +119,9 @@ export function generateSitemapIndex(sitemaps: SitemapIndexEntry[], baseUrl?: st
  * Gets the base URL from environment
  */
 export function getBaseUrl(): string {
-  const url = import.meta.env.STOREFRONT_URL;
+  // Try runtime env first (wrangler.jsonc vars set by middleware)
+  const { getRuntimeStorefrontUrl } = require("./api/runtime-env");
+  const url = getRuntimeStorefrontUrl() || import.meta.env.STOREFRONT_URL;
   if (!url) {
     throw new Error('STOREFRONT_URL environment variable is not set');
   }

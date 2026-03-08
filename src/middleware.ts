@@ -250,7 +250,10 @@ const apiContextMiddleware = defineMiddleware((context, next) => {
   // Set module-level env vars for sync access by client.ts + media-url.ts
   setRuntimeEnv({
     PUBLIC_API_URL: runtimeEnv?.PUBLIC_API_URL as string | undefined,
+    PUBLIC_API_BASE_URL: runtimeEnv?.PUBLIC_API_BASE_URL as string | undefined,
     CDN_DOMAIN_URL: runtimeEnv?.CDN_DOMAIN_URL as string | undefined,
+    STOREFRONT_URL: runtimeEnv?.STOREFRONT_URL as string | undefined,
+    API_TOKEN: runtimeEnv?.API_TOKEN as string | undefined,
   });
   return apiContext.run({
     BACKEND_API: runtimeEnv?.BACKEND_API as any,

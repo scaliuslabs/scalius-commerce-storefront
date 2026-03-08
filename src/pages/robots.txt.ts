@@ -3,7 +3,7 @@ import { getSeoSettings } from "@/lib/api";
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({}) => {
+export const GET: APIRoute = async ({ locals }) => {
   const seoSettings = await getSeoSettings();
 
   let robotsContent = "User-agent: *\nAllow: /"; // Default robots.txt
@@ -13,8 +13,9 @@ export const GET: APIRoute = async ({}) => {
   }
 
   // Append sitemap reference
-  const sitemapUrl = import.meta.env.STOREFRONT_URL
-    ? `${import.meta.env.STOREFRONT_URL.replace(/\/$/, '')}/sitemap.xml`
+  const storefrontUrl = (locals.runtime?.env?.STOREFRONT_URL as string) || import.meta.env.STOREFRONT_URL || '';
+  const sitemapUrl = storefrontUrl
+    ? `${storefrontUrl.replace(/\/$/, '')}/sitemap.xml`
     : '/sitemap.xml';
 
   // Add sitemap if not already present

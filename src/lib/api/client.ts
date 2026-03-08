@@ -15,7 +15,7 @@
 // 2. Client-side: window.__API_BASE_URL__ injected by Layout.astro
 // 3. Build-time: import.meta.env.PUBLIC_API_URL (from .env if present)
 // 4. Last resort: /api/v1 (same-origin proxy for local dev)
-import { getRuntimeApiUrl } from "./runtime-env";
+import { getRuntimeApiUrl, getRuntimeApiToken } from "./runtime-env";
 
 function getApiBaseUrl(): string {
   // SSR: try runtime env (set per-request by middleware from locals.runtime.env)
@@ -68,7 +68,7 @@ async function getJwtToken(): Promise<string | null> {
 
   tokenRefreshPromise = (async () => {
     try {
-      const apiToken = import.meta.env.API_TOKEN;
+      const apiToken = getRuntimeApiToken() || import.meta.env.API_TOKEN;
       if (!apiToken) {
         console.error(
           "[API Client] API_TOKEN is not configured in environment variables.",

@@ -14,7 +14,7 @@ import type { APIRoute } from "astro";
 
 const BACKEND_LOGOUT_PATH = "/api/v1/customer-auth/logout";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
   const hostname = url.hostname;
 
@@ -48,7 +48,10 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Forward the logout to the backend so the KV session is deleted.
   // Best-effort: even if this fails, the cookies are cleared above.
+  const runtimeEnv = locals.runtime?.env;
   const backendBase =
+    (runtimeEnv?.PUBLIC_API_BASE_URL as string) ||
+    (runtimeEnv?.PUBLIC_API_URL as string)?.replace(/\/api\/v1\/?$/, "") ||
     import.meta.env.PUBLIC_API_BASE_URL ||
     import.meta.env.PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, "") ||
     "";

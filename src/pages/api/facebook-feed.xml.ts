@@ -165,9 +165,9 @@ function generateFacebookFeed(products: Product[], baseUrl: string, currencyCode
   return xml;
 }
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, locals }) => {
   try {
-    const baseUrl = import.meta.env.STOREFRONT_URL?.replace(/\/$/, '');
+    const baseUrl = ((locals.runtime?.env?.STOREFRONT_URL as string) || import.meta.env.STOREFRONT_URL || '')?.replace(/\/$/, '');
     if (!baseUrl) {
       return new Response('STOREFRONT_URL not configured', { status: 500 });
     }
