@@ -1,6 +1,5 @@
 ---
 // src/components/product/ProductGallery.astro
-import { getImage } from "astro:assets";
 import type { Product, ProductImage } from "@/lib/api";
 import { GALLERY_CONFIG } from "./config";
 import ProductImageZoom from "./ProductImageZoom";
@@ -17,18 +16,19 @@ const mobileThumb = GALLERY_CONFIG.thumbnails.mobile;
 const hasMultipleImages = images.length > 1;
 
 /**
- * Format image URL targeting the cloud directly instead of bouncing through the local astro/worker proxy.
- * If the image is already on cloud.wrygo.com, instruct the edge to resize it directly.
- * Standard format: https://cloud.wrygo.com/cdn-cgi/image/width=X,height=Y.../filename
+ * Format image URL targeting the CDN directly instead of bouncing through the local astro/worker proxy.
+ * If the image is on the configured CDN domain, instruct the edge to resize it directly.
+ * CDN domain resolved from Cloudflare Worker runtime env (wrangler.jsonc vars).
  */
+const cdnDomainRaw = (Astro.locals.runtime?.env?.CDN_DOMAIN_URL as string) || import.meta.env.CDN_DOMAIN_URL || '';
+const cdnHost = cdnDomainRaw.replace(/^https?:\/\//, '');
+
 function getCloudOptimizedUrl(url: string, width: number, height: number, quality: number) {
-  if (!url) return '';
-  // Only intercept cloud URLs
-  if (url.includes('cloud.wrygo.com')) {
+  if (!url || !cdnHost) return url || '';
+  if (url.includes(cdnHost)) {
     const isFullUrl = url.startsWith('http');
-    // Extract everything past the domain if it's a full URL
     const relativePath = isFullUrl ? new URL(url).pathname : url;
-    return `https://cloud.wrygo.com/cdn-cgi/image/width=${width},height=${height},quality=${quality},format=avif,fit=cover${relativePath}`;
+    return `https://${cdnHost}/cdn-cgi/image/width=${width},height=${height},quality=${quality},format=auto,fit=cover${relativePath}`;
   }
   return url;
 }

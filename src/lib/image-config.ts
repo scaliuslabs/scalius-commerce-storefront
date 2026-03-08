@@ -1,38 +1,42 @@
 /**
- * Image Configuration with Environment Variables
- * This module handles image domain configuration from CDN_DOMAIN_URL environment variable
- *
- * Supports:
- * - Single domain: CDN_DOMAIN_URL=cdn.scalius.com
- * - Multiple domains: CDN_DOMAIN_URL=cdn.scalius.com,something.com,somethingelse.com
+ * Image Configuration
+ * Reads CDN_DOMAIN_URL from wrangler.jsonc vars (the single source of truth).
+ * Falls back to process.env for backwards compatibility.
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 /**
- * Parse CDN domains from environment variables at build time
+ * Parse CDN domains from wrangler.jsonc vars or process.env.
  */
 const getCdnDomains = (): string[] => {
-  const cdnDomainUrl = process.env.CDN_DOMAIN_URL;
+  // Try process.env first (manual override)
+  let cdnDomainUrl = process.env.CDN_DOMAIN_URL;
+
+  // Read from wrangler.jsonc if not in process.env
+  if (!cdnDomainUrl) {
+    try {
+      const wranglerPath = resolve(process.cwd(), 'wrangler.jsonc');
+      const raw = readFileSync(wranglerPath, 'utf-8');
+      // Strip JSONC comments (// style) for JSON.parse
+      const json = raw.replace(/^\s*\/\/.*$/gm, '');
+      const config = JSON.parse(json);
+      cdnDomainUrl = config.vars?.CDN_DOMAIN_URL;
+    } catch {
+      // Silently fall through
+    }
+  }
 
   if (!cdnDomainUrl) {
-    console.warn(
-      "No CDN_DOMAIN_URL found in environment variables, using default cdn.scalius.com",
-    );
-    return ["cdn.scalius.com"];
+    return ['cdn.scalius.com'];
   }
 
-  // Split by comma and clean up whitespace
   const domains = cdnDomainUrl
-    .split(",")
-    .map((domain) => domain.trim())
-    .filter((domain) => domain.length > 0);
+    .split(',')
+    .map((domain: string) => domain.trim())
+    .filter((domain: string) => domain.length > 0);
 
-  if (domains.length === 0) {
-    console.warn("CDN_DOMAIN_URL is empty, using default cdn.scalius.com");
-    return ["cdn.scalius.com"];
-  }
-
-  console.log(`Configured CDN domains: ${domains.join(", ")}`);
-  return domains;
+  return domains.length > 0 ? domains : ['cdn.scalius.com'];
 };
 
 // Capture CDN domains at build time

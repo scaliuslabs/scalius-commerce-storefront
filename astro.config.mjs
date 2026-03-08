@@ -27,6 +27,10 @@ export default defineConfig({
     prefetchAll: true,
   },
 
+  build: {
+    inlineStylesheets: "always",
+  },
+
   output: "server",
   compressHTML: true,
 
@@ -43,8 +47,8 @@ export default defineConfig({
       alias:
         process.env.NODE_ENV === "production"
           ? {
-              "react-dom/server": "react-dom/server.edge",
-            }
+            "react-dom/server": "react-dom/server.edge",
+          }
           : undefined,
     },
     ssr: {

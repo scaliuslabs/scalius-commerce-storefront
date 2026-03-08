@@ -3,6 +3,7 @@
 
 import { defineMiddleware, sequence } from "astro:middleware";
 import { apiContext } from "@/lib/api/context";
+import { setRuntimeEnv } from "@/lib/api/runtime-env";
 import { setPageCspHeader } from "@/lib/middleware-helper/csp-handler";
 import { setEdgeCacheContext } from "@/lib/edge-cache";
 import { BUILD_ID } from "@/config/build-id";
@@ -245,8 +246,17 @@ const cachingMiddleware = defineMiddleware(async (context, next) => {
 });
 
 const apiContextMiddleware = defineMiddleware((context, next) => {
-  const backendApi = context.locals.runtime?.env?.BACKEND_API;
-  return apiContext.run({ BACKEND_API: backendApi as any }, next);
+  const runtimeEnv = context.locals.runtime?.env;
+  // Set module-level env vars for sync access by client.ts + media-url.ts
+  setRuntimeEnv({
+    PUBLIC_API_URL: runtimeEnv?.PUBLIC_API_URL as string | undefined,
+    CDN_DOMAIN_URL: runtimeEnv?.CDN_DOMAIN_URL as string | undefined,
+  });
+  return apiContext.run({
+    BACKEND_API: runtimeEnv?.BACKEND_API as any,
+    PUBLIC_API_URL: runtimeEnv?.PUBLIC_API_URL as string | undefined,
+    CDN_DOMAIN_URL: runtimeEnv?.CDN_DOMAIN_URL as string | undefined,
+  }, next);
 });
 
 export const onRequest = sequence(apiContextMiddleware, cachingMiddleware);

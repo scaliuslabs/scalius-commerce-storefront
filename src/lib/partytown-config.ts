@@ -1,20 +1,32 @@
 /**
- * Partytown Configuration with Environment Variables
- * This module handles the Partytown proxy configuration for Facebook Pixel
+ * Partytown Configuration
+ * Reads API base URL from wrangler.jsonc vars (the single source of truth).
  */
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-// Get API base URL from environment variables at build time
+// Get API base URL from wrangler.jsonc vars or process.env
 const getApiBaseUrl = (): string => {
-  const apiBaseUrl =
+  // Try process.env first (manual override)
+  let apiBaseUrl =
     process.env.PUBLIC_API_BASE_URL ||
     process.env.PUBLIC_API_URL?.replace("/api/v1", "");
 
+  // Read from wrangler.jsonc if not in process.env
   if (!apiBaseUrl) {
-    console.warn("No API base URL found in environment variables");
-    return "";
+    try {
+      const wranglerPath = resolve(process.cwd(), 'wrangler.jsonc');
+      const raw = readFileSync(wranglerPath, 'utf-8');
+      const json = raw.replace(/^\s*\/\/.*$/gm, '');
+      const config = JSON.parse(json);
+      apiBaseUrl = config.vars?.PUBLIC_API_BASE_URL ||
+        config.vars?.PUBLIC_API_URL?.replace("/api/v1", "");
+    } catch {
+      // Silently fall through
+    }
   }
 
-  return apiBaseUrl;
+  return apiBaseUrl || "";
 };
 
 // Capture the API base URL at build time

@@ -61,16 +61,21 @@ const currencyCode = layoutData?.currency?.code ?? "BDT";
 
 <Layout title={pageTitle} description={pageDescription} layoutData={layoutData}>
   <Fragment slot="head">
-    {images.length > 0 && (
-      <link 
-        rel="preload" 
-        as="image" 
-        href={images[0].url.includes('cloud.wrygo.com') 
-          ? `https://cloud.wrygo.com/cdn-cgi/image/width=600,height=600,quality=85,format=avif,fit=cover${new URL(images[0].url).pathname}` 
-          : images[0].url} 
-        fetchpriority="high" 
-      />
-    )}
+    {images.length > 0 && (() => {
+      const cdnDom = ((Astro.locals.runtime?.env?.CDN_DOMAIN_URL as string) || import.meta.env.CDN_DOMAIN_URL || '').replace(/^https?:\/\//, '');
+      const imgUrl = images[0].url;
+      const preloadHref = cdnDom && imgUrl.includes(cdnDom)
+        ? `https://${cdnDom}/cdn-cgi/image/width=600,height=600,quality=85,format=auto,fit=cover${new URL(imgUrl).pathname}`
+        : imgUrl;
+      return (
+        <link 
+          rel="preload" 
+          as="image" 
+          href={preloadHref} 
+          fetchpriority="high" 
+        />
+      );
+    })()}
   </Fragment>
 
   <main
@@ -120,9 +125,18 @@ const currencyCode = layoutData?.currency?.code ?? "BDT";
   </main>
 </Layout>
 
-<script src="@/components/product/scripts/product-controller.ts"></script>
 <script>
-  import { trackFbViewContent } from "@/lib/analytics";
+  // Defer the product controller to break the critical chain for pricing-engine.js.
+  // The controller only needs to run after DOM is ready (init() does DOM queries).
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      import('@/components/product/scripts/product-controller').then(m => m.init());
+    }, { once: true });
+  } else {
+    import('@/components/product/scripts/product-controller').then(m => m.init());
+  }
+</script>
+<script>
   import type { Product, Category, ProductVariant } from "@/lib/api";
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -143,23 +157,36 @@ const currencyCode = layoutData?.currency?.code ?? "BDT";
       const category: Category | null = JSON.parse(categoryDataAttr);
       const variants: ProductVariant[] = JSON.parse(variantsDataAttr);
 
-      setTimeout(() => {
+      // DEFER DEPENDENCY CHAIN:
+      // Dynamically load the analytics tracker only after the page has fully loaded
+      // to remove it from the Lighthouse Critical Request Chain. We use the 'load'
+      // event instead of a 'setTimeout' to avoid arbitrary delays and ensure data
+      // isn't dropped for fast-bouncing visitors while remaining predictable for developers.
+      const triggerAnalytics = () => {
         if (typeof window.fbq === "function") {
-          trackFbViewContent({
-            content_ids: [product.id],
-            content_name: product.name,
-            content_category: category?.name,
-            content_type: "product",
-            currency: (window as any).__CURRENCY_CODE__ || "BDT",
-            value: product.discountedPrice,
-            contents: variants.map((v: ProductVariant) => ({
-              id: v.id && v.id !== "default" ? v.id : product.id,
-              quantity: 1,
-              item_price: v.price || product.discountedPrice,
-            })),
+          import("@/lib/analytics").then(({ trackFbViewContent }) => {
+            trackFbViewContent({
+              content_ids: [product.id],
+              content_name: product.name,
+              content_category: category?.name,
+              content_type: "product",
+              currency: (window as any).__CURRENCY_CODE__ || "BDT",
+              value: product.discountedPrice,
+              contents: variants.map((v: ProductVariant) => ({
+                id: v.id && v.id !== "default" ? v.id : product.id,
+                quantity: 1,
+                item_price: v.price || product.discountedPrice,
+              })),
+            });
           });
         }
-      }, 500);
+      };
+
+      if (document.readyState === "complete") {
+        setTimeout(triggerAnalytics, 1);
+      } else {
+        window.addEventListener("load", triggerAnalytics, { once: true });
+      }
     } catch (error) {
       console.error("FB ViewContent: Error parsing data attributes:", error);
     }

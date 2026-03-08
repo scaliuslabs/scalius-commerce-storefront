@@ -5,19 +5,33 @@
  * Handles request creation, authentication, and resilient fetching.
  */
 
-// Resolve the API base URL:
-// 1. In browser: read from window.__API_BASE_URL__ set by Layout.astro's define:vars script
-//    (Cloudflare Worker runtime vars are NOT available to Vite client bundles via import.meta.env)
-// 2. In SSR: read from import.meta.env.PUBLIC_API_URL (available server-side)
-// 3. Fallback: /api/v1 (same-origin proxy for local dev)
-function resolveApiBaseUrl(): string {
+// Resolve the API base URL lazily (called per-request, not at module init).
+//
+// In SSR, this module loads once per Worker isolate BEFORE any request's context is set.
+// A module-level constant would always resolve to the build-time fallback (empty without .env).
+//
+// Resolution order:
+// 1. SSR runtime: Cloudflare Worker env from runtime-env.ts (wrangler.jsonc vars)
+// 2. Client-side: window.__API_BASE_URL__ injected by Layout.astro
+// 3. Build-time: import.meta.env.PUBLIC_API_URL (from .env if present)
+// 4. Last resort: /api/v1 (same-origin proxy for local dev)
+import { getRuntimeApiUrl } from "./runtime-env";
+
+function getApiBaseUrl(): string {
+  // SSR: try runtime env (set per-request by middleware from locals.runtime.env)
+  if (import.meta.env.SSR) {
+    const runtimeUrl = getRuntimeApiUrl();
+    if (runtimeUrl) return runtimeUrl;
+  }
+
+  // Client-side: read from injected window var
   if (typeof window !== "undefined" && (window as any).__API_BASE_URL__) {
     return (window as any).__API_BASE_URL__;
   }
+
+  // Build-time fallback (from .env if present)
   return import.meta.env.PUBLIC_API_URL || "/api/v1";
 }
-
-const API_BASE_URL = resolveApiBaseUrl();
 
 // --- JWT Token Management ---
 
@@ -31,9 +45,8 @@ let tokenRefreshPromise: Promise<string | null> | null = null;
  * @returns The full URL for the API request.
  */
 export function createApiUrl(path: string): string {
-  // Ensure the path starts with a slash
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE_URL}${cleanPath}`;
+  return `${getApiBaseUrl()}${cleanPath}`;
 }
 
 /**
@@ -144,7 +157,7 @@ export async function fetchWithRetry(
     }
 
     let response: Response;
-    if (import.meta.env.SSR && backendApi && url.startsWith(API_BASE_URL)) {
+    if (import.meta.env.SSR && backendApi && url.startsWith(getApiBaseUrl())) {
       const request = new Request(url, {
         ...options,
         headers,

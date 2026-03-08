@@ -441,10 +441,5 @@ function showToast(msg: string, type: "success" | "error") {
   setTimeout(() => toast.remove(), 3000);
 }
 
-// Init
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
-} else {
-  // If already loaded, run immediately
-  init();
-}
+// Export init for deferred dynamic import from [slug].astro
+export { init };
