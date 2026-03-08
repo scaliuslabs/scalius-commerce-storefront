@@ -165,12 +165,7 @@ const layoutData = await getLayoutData();
   import { getCustomerSession, getCustomerOrders, logoutCustomer, updateCustomerProfile, type CustomerOrder } from "@/lib/api/customer-auth";
   import { getCities, getZones } from "@/lib/api/shipping";
 
-  // Removed STATUS_COLORS object as it's replaced by switch logic in renderOrder
-  const PAYMENT_LABELS: Record<string, string> = {
-    cod: "Cash on Delivery",
-    stripe: "Card Payment",
-    sslcommerz: "Online Payment",
-  };
+
 
   function formatDate(iso: string | null): string {
     if (!iso) return "—";
@@ -486,9 +481,9 @@ const layoutData = await getLayoutData();
   });
 
   // Init on page load
-  document.addEventListener("astro:page-load", async () => {
+  document.addEventListener("astro:page-load", () => {
     // Re-run the DOMContentLoaded logic for Astro page loads
-    await (document.querySelector("script") as HTMLScriptElement).dispatchEvent(new Event("DOMContentLoaded"));
+    (document.querySelector("script") as HTMLScriptElement).dispatchEvent(new Event("DOMContentLoaded"));
   });
 </script>
 

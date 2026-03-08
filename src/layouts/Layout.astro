@@ -170,7 +170,7 @@ const cdnDomain = cdnDomainUrl || null;
       // Stub for Facebook Pixel on the main thread
       window.fbq = window.fbq || function() { (window.fbq.q = window.fbq.q || []).push(arguments) };
     </script>
-    <script type="text/partytown">
+    <script type="text/partytown" is:inline>
       // Stub for Facebook Pixel INSIDE the Partytown Web Worker
       // Prevents "TypeError: Cannot read properties of undefined (reading 'apply')" 
       // when Partytown proxies fbq() calls here but the real script hasn't loaded.

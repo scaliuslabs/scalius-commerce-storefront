@@ -1,7 +1,7 @@
 // src/lib/api/orders.ts
 
 import { createApiUrl, fetchWithRetry } from "./client";
-import type { Order, CreateOrderPayload, ApiResponse } from "./types";
+import type { Order, CreateOrderPayload } from "./types";
 
 /**
  * Submits a new order to the backend.

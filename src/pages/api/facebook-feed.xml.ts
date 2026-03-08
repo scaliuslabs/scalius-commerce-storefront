@@ -165,9 +165,12 @@ function generateFacebookFeed(products: Product[], baseUrl: string, currencyCode
   return xml;
 }
 
-export const GET: APIRoute = async ({ url, locals }) => {
+import { getRuntimeStorefrontUrl } from "@/lib/runtime-env";
+import type { APIContext } from 'astro';
+
+export const GET: APIRoute = async ({ url, locals }: APIContext) => {
   try {
-    const baseUrl = ((locals.runtime?.env?.STOREFRONT_URL as string) || import.meta.env.STOREFRONT_URL || '')?.replace(/\/$/, '');
+    const baseUrl = getRuntimeStorefrontUrl(locals);
     if (!baseUrl) {
       return new Response('STOREFRONT_URL not configured', { status: 500 });
     }
@@ -193,27 +196,59 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const layoutData = await getLayoutData();
     const currencyCode = layoutData?.currency?.code ?? "BDT";
 
-    // Fetch products
-    const response = await getAllProducts({
-      page: page,
-      limit: limit,
+    // We need multiple API pages to fulfill 1 feed chunk depending on limit
+    const limitParams = 100; // Fetch 100 products per API call
+    const startApiPage = ((page - 1) * (limit / limitParams)) + 1;
+    let requiredApiPages = limit / limitParams;
+
+    const allProducts: Product[] = [];
+
+    // Fetch first page to get totalPages
+    const firstResponse = await getAllProducts({
+      page: startApiPage,
+      limit: limitParams,
     });
 
-    if (!response || !response.data) {
-      console.error('Failed to fetch products for Facebook feed');
-      return new Response('Failed to fetch products', { status: 500 });
+    if (!firstResponse || !firstResponse.data || firstResponse.data.length === 0) {
+      if (page > 1) {
+        return new Response('Page not found', { status: 404 });
+      }
+      return new Response(generateFacebookFeed([], baseUrl, currencyCode), {
+        status: 200,
+        headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+      });
     }
 
-    // Filter only active products
-    // Treat undefined isActive as true (API list endpoint doesn't return isActive field)
-    const activeProducts = response.data.filter((product) => product.isActive !== false);
+    allProducts.push(...firstResponse.data.filter((p) => p.isActive !== false));
+    const totalPages = firstResponse.pagination.totalPages;
 
-    if (activeProducts.length === 0 && page > 1) {
+    // Limit requiredApiPages if we hit the end of the total products early
+    const maxApiPage = Math.min(startApiPage + requiredApiPages - 1, totalPages);
+
+    // Fetch remaining API pages needed for this feed chunk in parallel batches to avoid timeout
+    const BATCH_SIZE = 5;
+    for (let currentApiPage = startApiPage + 1; currentApiPage <= maxApiPage; currentApiPage += BATCH_SIZE) {
+      const fetchPromises = [];
+      const endBatchPage = Math.min(currentApiPage + BATCH_SIZE - 1, maxApiPage);
+
+      for (let p = currentApiPage; p <= endBatchPage; p++) {
+        fetchPromises.push(getAllProducts({ page: p, limit: limitParams }));
+      }
+
+      const batchResponses = await Promise.all(fetchPromises);
+      for (const res of batchResponses) {
+        if (res && res.data) {
+          allProducts.push(...res.data.filter((p) => p.isActive !== false));
+        }
+      }
+    }
+
+    if (allProducts.length === 0 && page > 1) {
       return new Response('Page not found', { status: 404 });
     }
 
     // Generate feed XML
-    const xml = generateFacebookFeed(activeProducts, baseUrl, currencyCode);
+    const xml = generateFacebookFeed(allProducts, baseUrl, currencyCode);
 
     return new Response(xml, {
       status: 200,

@@ -38,7 +38,6 @@ if (errorFetching || !order) {
 
 const orderItemsFromApi: OrderItem[] = order.items || [];
 const currencySymbol = layoutData?.currency?.symbol ?? "৳";
-const currencyCode = layoutData?.currency?.code ?? "BDT";
 ---
 
 <Layout title="Order Successful" layoutData={layoutData}>

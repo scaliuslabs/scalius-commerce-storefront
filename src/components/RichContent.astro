@@ -29,7 +29,7 @@ if (shouldProcessShortcodes && content) {
 if (processedContent) {
   processedContent = processedContent.replace(
     /<img([^>]*)src="([^"]*\/cdn-cgi\/image\/[^"]*width=600[^"]*)"([^>]*)>/gi,
-    (match, before, src, after) => {
+    ( _match, before, src, after) => {
       // Clean duplicate loading attributes
       const cleanBefore = before.replace(/\sloading="[^"]*"/gi, '');
       const cleanAfter = after.replace(/\sloading="[^"]*"/gi, '');
