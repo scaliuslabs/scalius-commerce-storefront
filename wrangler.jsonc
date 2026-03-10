@@ -28,9 +28,9 @@
     }
   ],
   "vars": {
-    "PUBLIC_API_URL": "https://dash.wrygo.com/api/v1",
-    "PUBLIC_API_BASE_URL": "https://dash.wrygo.com",
-    "STOREFRONT_URL": "https://store.wrygo.com",
-    "CDN_DOMAIN_URL": "cloud.wrygo.com"
+    "PUBLIC_API_URL": "https://dashboard.scalius.com/api/v1",
+    "PUBLIC_API_BASE_URL": "https://dashboard.scalius.com",
+    "STOREFRONT_URL": "https://storefront.scalius.com",
+    "CDN_DOMAIN_URL": "cloud.scalius.com"
   }
 }
