@@ -136,6 +136,8 @@ const submitLabel = codOnly
     data-cod-only={codOnly ? "true" : "false"}
     data-gateways={JSON.stringify(checkoutConfig.gateways)}
     data-guest-checkout-enabled={checkoutConfig.guestCheckoutEnabled !== false ? "true" : "false"}
+    data-default-shipping-id={shippingMethods[0]?.id || ""}
+    data-default-shipping-fee={String(shippingMethods[0]?.fee ?? 0)}
     hidden
   ></div>
 
@@ -671,8 +673,18 @@ const submitLabel = codOnly
         }
 
         // Capture the current shipping fee from the ShippingLocationSelector
-        const shippingFee = (window as any).lastShippingEventDetail?.fee ?? 0;
+        let shippingFee = (window as any).lastShippingEventDetail?.fee ?? 0;
         const shippingMethodId = (window as any).lastShippingEventDetail?.id;
+
+        // Zero out shipping if any cart item has free delivery
+        const cartDataForShipping = JSON.parse(
+          (document.getElementById('cartItemsInput') as HTMLInputElement)?.value || '{}'
+        );
+        const hasFreeDeliveryItem = Object.values(cartDataForShipping).some(
+          (item: any) => item.freeDelivery
+        );
+        if (hasFreeDeliveryItem) shippingFee = 0;
+
         checkoutData["shippingCharge"] = String(shippingFee);
         if (shippingMethodId) checkoutData["shippingMethodId"] = shippingMethodId;
 

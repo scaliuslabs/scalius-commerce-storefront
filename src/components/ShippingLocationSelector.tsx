@@ -25,13 +25,14 @@ export default function ShippingLocationSelector({
 
   useEffect(() => {
     if (selectedLocation) {
-      const event = new CustomEvent("shippingLocationChange", {
-        detail: {
-          id: selectedLocation,
-          fee:
-            shippingMethods.find((sm) => sm.id === selectedLocation)?.fee || 0,
-        },
-      });
+      const detail = {
+        id: selectedLocation,
+        fee:
+          shippingMethods.find((sm) => sm.id === selectedLocation)?.fee || 0,
+      };
+      // Set directly on window to eliminate race condition with event listeners
+      (window as any).lastShippingEventDetail = detail;
+      const event = new CustomEvent("shippingLocationChange", { detail });
       window.dispatchEvent(event);
     }
   }, [selectedLocation, shippingMethods]);

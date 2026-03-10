@@ -112,6 +112,17 @@ export async function processOrder(formData: FormData) {
       const item = cartItemsArray[i];
       const productData = productDataResults[i];
 
+      // Validate quantity bounds (defense-in-depth; backend Zod also checks >= 1)
+      if (
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > 99
+      ) {
+        throw new Error(
+          `Invalid quantity for "${item.name || "item"}". Must be between 1 and 99.`,
+        );
+      }
+
       if (!productData) {
         throw new Error(`Product "${item.name}" is no longer available.`);
       }
@@ -190,6 +201,16 @@ export async function processOrder(formData: FormData) {
         quantity: item.quantity,
         price: finalPrice,
       });
+    }
+
+    // Check if any product in the order qualifies for free delivery.
+    // This must match the client-side logic so the order total is consistent
+    // with what the customer saw at checkout.
+    const hasFreeDeliveryProduct = productDataResults.some(
+      (data) => data?.product?.freeDelivery === true,
+    );
+    if (hasFreeDeliveryProduct) {
+      shippingCharge = 0;
     }
 
     let discountId: string | null = null;

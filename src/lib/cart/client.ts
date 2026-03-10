@@ -467,6 +467,21 @@ function handleRemoveDiscount() {
 
 // --- Initialization ---
 export async function initCartFunctionality() {
+  // ── Read server-rendered shipping defaults ────────────────────────────────
+  // Eliminates the race condition: this runs before React hydration, ensuring
+  // window.lastShippingEventDetail is always set for the first updateTotals().
+  if (!window.lastShippingEventDetail) {
+    const meta = document.getElementById("checkout-meta");
+    const defaultId = meta?.dataset.defaultShippingId;
+    const defaultFee = meta?.dataset.defaultShippingFee;
+    if (defaultId) {
+      window.lastShippingEventDetail = {
+        id: defaultId,
+        fee: parseInt(defaultFee || "0", 10),
+      };
+    }
+  }
+
   // Clear any stale discount on page load — customers must re-apply at checkout
   if (cartStore.get().discount) {
     cartStore.setKey("discount", null);
